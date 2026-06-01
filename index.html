@@ -367,16 +367,26 @@ async function initApp() {
     }
 }
 
-// 2. 統一同步函數 (修正 payload 結構)
 async function syncAndSave() {
     document.getElementById('loading-overlay').classList.add('active');
     try {
-        await fetch(GAS_URL, {
+        const response = await fetch(GAS_URL, {
             method: "POST",
-            body: JSON.stringify({ action: 'saveAll', types, months, events, password: correctPassword })
+            // 確保資料是以字串格式發送
+            body: JSON.stringify({ types, months, events, password: correctPassword })
         });
-        render();
-    } catch (e) { alert("同步失敗，請檢查網路"); }
+        
+        const result = await response.text();
+        console.log("後端回應結果:", result); // 這行非常重要！打開 F12 看它寫了什麼
+        
+        if (result === "Success") {
+            render();
+        } else {
+            alert("伺服器錯誤: " + result);
+        }
+    } catch (e) { 
+        console.error("同步失敗:", e);
+    }
     document.getElementById('loading-overlay').classList.remove('active');
 }
 
