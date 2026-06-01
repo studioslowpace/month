@@ -390,6 +390,9 @@ async function syncAndSave() {
     document.getElementById('loading-overlay').classList.remove('active');
 }
 
+    // 測試直接呼叫同步函數，看看網路有沒有反應
+syncAndSave();
+
 window.onmessage = (event) => {
     if (event.data) {
         const data = event.data;
