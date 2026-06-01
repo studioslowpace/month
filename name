@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h2>Google Sheet 更新測試</h2>
+    <input type="text" id="name" placeholder="姓名">
+    <input type="text" id="msg" placeholder="訊息">
+    <button onclick="sendData()">傳送資料</button>
+
+    <script>
+        function sendData() {
+            const url = "<https://script.google.com/macros/s/AKfycbyfJSEHbrgFyOhnSADro6lhkesDAx8y2czAwJCpm64PHq3UlCZFvxMSQfCP6-H1kp1o/exec>";
+            const data = {
+                name: document.getElementById('name').value,
+                message: document.getElementById('msg').value
+            };
+
+            fetch(url, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(data => alert('成功更新到試算表！'));
+        }
+    </script>
+</body>
+</html>
