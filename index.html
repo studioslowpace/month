@@ -194,6 +194,8 @@
             .row input, .row select, .row button { width: 100% !important; }
             #admin-panel h3 { flex-direction: column; align-items: center; gap: 8px; }
         }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center; }
+.loading-overlay.active { display: flex; }
     </style>
 </head>
 <body>
@@ -238,6 +240,10 @@
     </div>
 </div>
 
+<div id="loading-overlay" class="loading-overlay">
+    <div class="loader">同步中...</div>
+</div>
+    
 <div class="modal-overlay" id="switchMonthModal">
     <div class="modal-card">
         <h3>請選擇月份</h3>
@@ -368,26 +374,30 @@ async function initApp() {
 }
 
 async function syncAndSave() {
-    document.getElementById('loading-overlay').classList.add('active');
+    // 檢查元素是否存在，避免 null 錯誤
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.classList.add('active');
+    }
+    
     try {
         const response = await fetch(GAS_URL, {
             method: "POST",
-            // 確保資料是以字串格式發送
             body: JSON.stringify({ types, months, events, password: correctPassword })
         });
         
         const result = await response.text();
-        console.log("後端回應結果:", result); // 這行非常重要！打開 F12 看它寫了什麼
+        console.log("伺服器回應:", result);
         
-        if (result === "Success") {
-            render();
-        } else {
-            alert("伺服器錯誤: " + result);
-        }
+        render();
     } catch (e) { 
         console.error("同步失敗:", e);
+    } finally {
+        // 同步完成後移除遮罩 (同樣先檢查)
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
     }
-    document.getElementById('loading-overlay').classList.remove('active');
 }
 
     // 測試直接呼叫同步函數，看看網路有沒有反應
