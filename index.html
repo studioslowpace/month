@@ -373,31 +373,26 @@ async function initApp() {
     }
 }
 
+// 修改後的讀取邏輯
+async function fetchData() {
+    const response = await fetch(GAS_URL);
+    const textData = await response.text(); // 獲取純文字
+    const data = JSON.parse(textData); // 轉為 JSON
+    console.log("讀取到的資料:", data);
+    return data;
+}
+
+// 修改後的寫入邏輯
 async function syncAndSave() {
-    // 檢查元素是否存在，避免 null 錯誤
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-        overlay.classList.add('active');
-    }
-    
-    try {
-        const response = await fetch(GAS_URL, {
-            method: "POST",
-            body: JSON.stringify({ types, months, events, password: correctPassword })
-        });
-        
-        const result = await response.text();
-        console.log("伺服器回應:", result);
-        
-        render();
-    } catch (e) { 
-        console.error("同步失敗:", e);
-    } finally {
-        // 同步完成後移除遮罩 (同樣先檢查)
-        if (overlay) {
-            overlay.classList.remove('active');
-        }
-    }
+    // 這裡我們不使用預檢 (Preflight) 複雜請求，簡化為單純的 POST
+    const response = await fetch(GAS_URL, {
+        method: "POST",
+        mode: "no-cors", // 使用 no-cors 模式，避開 Preflight check
+        body: JSON.stringify({ types, months, events, password: correctPassword })
+    });
+    // 注意：在 no-cors 模式下，response.text() 會是空的，這是正常的
+    alert("資料已發送！");
+    render();
 }
 
     // 測試直接呼叫同步函數，看看網路有沒有反應
