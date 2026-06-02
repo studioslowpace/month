@@ -386,51 +386,36 @@ async function initApp() {
     }
 }
 
-async function fetchData() {
-    const { data, error } = await supabase
-        .from('events') 
-        .select('calendar_password, calendar_events, calendar_months, calendar_types')
-        .eq('title', 'main_calendar')
-        .single();
-    
-    if (error) {
-        console.error("讀取資料失敗:", error);
-        return null;
-    }
-    
-    // 將資料庫的欄位名稱轉回你的 JavaScript 變數
-    return {
-        password: data.calendar_password,
-        events: data.calendar_events,
-        months: data.calendar_months,
-        types: data.calendar_types
-    };
-}
-
+// 修改同步函數
 async function syncAndSave() {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) overlay.classList.add('active');
-
     const { data, error } = await supabase
         .from('events')
         .update({ 
-            title: 'main_calendar', // 關鍵：明確指定 title 欄位的值
             calendar_password: correctPassword,
             calendar_events: events,
             calendar_months: months,
             calendar_types: types
         })
-        .eq('title', 'main_calendar'); // 告訴資料庫你要更新的是 title 為 'main_calendar' 的那一列
+        .eq('id', 1); // 強制指定更新 id 為 1 的那一行
         
-    if (overlay) overlay.classList.remove('active');
+    if (error) alert("同步失敗: " + error.message);
+    else alert("同步成功！");
+}
 
-    if (error) {
-        console.error("同步失敗詳細錯誤:", error);
-        alert("同步失敗: " + error.message);
-    } else {
-        alert("同步成功！");
-        render();
-    }
+// 修改讀取函數
+async function fetchData() {
+    const { data, error } = await supabase
+        .from('events') 
+        .select('calendar_password, calendar_events, calendar_months, calendar_types')
+        .eq('id', 1) // 透過 id=1 讀取
+        .single();
+    
+    return data ? {
+        password: data.calendar_password,
+        events: data.calendar_events,
+        months: data.calendar_months,
+        types: data.calendar_types
+    } : null;
 }
 
     // 測試直接呼叫同步函數，看看網路有沒有反應
