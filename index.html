@@ -341,33 +341,74 @@
     let currentMonth = "2026-06";
     let events = {}; // 格式: { "2026-06": [{day: 1, time: "10:00", text: "測試"}] }
 
-    // 3. 核心函式 (全部掛載到 window)
-    window.render = function() {
-        const calendarEl = document.getElementById('calendar');
-        calendarEl.innerHTML = '';
-        ['日', '一', '二', '三', '四', '五', '六'].forEach(d => calendarEl.innerHTML += `<div class="cell" style="font-weight:bold">${d}</div>`);
-        
-        for (let d = 1; d <= 30; d++) {
-            const dayEvents = (events[currentMonth] || []).filter(e => e.day === d);
-            calendarEl.innerHTML += `
-                <div class="cell" onclick="window.setFormDate(${d})">
-                    <div class="day-num">${d}</div>
-                    ${dayEvents.map(e => `<div class="event"><b>${e.time}</b> ${e.text}</div>`).join('')}
-                </div>`;
-        }
-    };
+const holidays = ["2026-01-01", "2026-02-17", "2026-02-18", "2026-02-19", "2026-04-03", "2026-04-04", "2026-04-06", "2026-04-07", "2026-05-01", "2026-05-25", "2026-06-19", "2026-07-01", "2026-09-26", "2026-10-01", "2026-10-19", "2026-12-25", "2026-12-26"];
 
-    window.addEvent = function() {
-        const day = parseInt(document.getElementById('e-day').value);
-        const time = document.getElementById('e-time').value;
-        const text = document.getElementById('e-text').value;
+
+window.render = function() {
+    // ... 前面的月份選單渲染邏輯保持不變 ...
+
+    const [year, month] = currentMonth.split('-').map(Number);
+    const calendarEl = document.getElementById('calendar');
+    calendarEl.innerHTML = ''; // 清空舊內容
+
+    // 星期表頭
+    ['日', '一', '二', '三', '四', '五', '六'].forEach(day => {
+        calendarEl.innerHTML += `<div class="weekday">${day}</div>`;
+    });
+
+    // 計算當月日期
+    const firstDay = new Date(year, month - 1, 1).getDay();
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    // 填充空白格
+    for (let i = 0; i < firstDay; i++) {
+        calendarEl.innerHTML += `<div class="cell empty-cell"></div>`;
+    }
+
+    // 填充日期格
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${month.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+        const dayEvents = (events[currentMonth] || []).filter(e => e.day === d);
         
-        if (!day || !text) return alert("請填寫日期與活動內容");
-        if (!events[currentMonth]) events[currentMonth] = [];
-        
-        events[currentMonth].push({ day, time, text });
-        window.render();
-    };
+        let eventHtml = dayEvents.map((e, index) => {
+            const typeInfo = types.find(t => t.name === e.type) || { color: '#ccc' };
+            return `
+                <div class="event" style="background:${typeInfo.color}" onclick="window.triggerEventAction(${index}, event)">
+                    <span class="evt-time">${e.time}</span>
+                    <span class="evt-text">${e.text}</span>
+                </div>`;
+        }).join('');
+
+;
+
+    window.convertToChineseMonth = function(monthStr) {
+    const [year, month] = monthStr.split('-');
+    const chineseMonths = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
+    return `${year}年${chineseMonths[parseInt(month)-1]}月`;
+};
+
+window.clearEventForm = function() {
+    document.getElementById('e-day').value = '';
+    document.getElementById('e-time').value = '';
+    document.getElementById('e-text').value = '';
+    editingEventId = null;
+    document.getElementById('btn-save-event').innerText = "新增活動";
+};
+
+window.addEvent = function() {
+    let day = document.getElementById('e-day').value;
+    let time = document.getElementById('e-time').value;
+    let text = document.getElementById('e-text').value.trim();
+    let type = document.getElementById('e-type').value;
+    if(!day) return alert("請填寫日期");
+    if(!events[currentMonth]) events[currentMonth] = [];
+    let eventData = { day: parseInt(day), time, text, type };
+    if(editingEventId !== null) events[currentMonth][editingEventId] = eventData;
+    else events[currentMonth].push(eventData);
+    window.clearEventForm();
+    window.syncAndSave();
+    window.render();
+};
 
     window.setFormDate = function(d) {
         if (!isAdmin) return;
@@ -385,6 +426,13 @@
         document.body.classList.toggle('admin-mode', isAdmin);
     };
 
+    window.triggerEventAction = function(index, event) {
+    event.stopPropagation();
+    targetedEventIndex = index;
+    // ... 你的彈出視窗處理邏輯
+    window.openModal('eventActionModal');
+    };
+    
     // 4. 初始化讀取
     document.addEventListener('DOMContentLoaded', async () => {
         const { data } = await client.from('events').select('*').eq('id', 1).single();
