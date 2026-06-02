@@ -381,6 +381,12 @@ window.fetchData = async function() {
     const { data, error } = await client.from('events').select('*').eq('id', 1).single();
     if (error) throw error;
     return data ? { password: data.calendar_password, events: data.calendar_events, months: data.calendar_months, types: data.calendar_types } : null;
+    // 確保 client 是在全域可見，或是你在該函式內能存取到的變數
+    const { data, error } = await client // <--- 改成這個
+        .from('events')
+        .select('*')
+        .eq('id', 1)
+        .single();
 };
 
 window.fetchData = async function() {
