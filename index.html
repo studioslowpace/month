@@ -1,84 +1,106 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <title>客舍管理系統</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; background: #ddd; padding: 5px; border-radius: 8px; }
-        .cell { background: white; min-height: 100px; padding: 5px; cursor: pointer; }
-        .event { background: #2b579a; color: white; padding: 3px 6px; border-radius: 4px; font-size: 12px; margin-top: 2px; display: flex; justify-content: space-between; cursor: grab; }
-        .admin-panel { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客舍時間表</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary-blue: #2b579a; --bg-color: #f7f5f2; }
+        body { font-family: sans-serif; background: var(--bg-color); padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 16px; }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid #ddd; border-left: 1px solid #ddd; }
+        .cell { min-height: 120px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 8px; cursor: pointer; }
+        .day-num { font-weight: bold; margin-bottom: 5px; }
+        .event { font-size: 12px; padding: 4px; margin: 2px 0; border-radius: 4px; background: #e0e0e0; }
+        .admin-panel { display: none; margin: 20px 0; padding: 20px; background: #fffdf0; border: 2px dashed #ffa000; }
+        body.admin-mode .admin-panel { display: block; }
+        input, select, button { padding: 8px; margin: 5px; }
+    </style>
 </head>
 <body>
 
-<div class="admin-panel">
-    <h3>管理員操作</h3>
-    <input type="date" id="e-date">
-    <input type="text" id="e-time" placeholder="時間 (如 19:00)">
-    <input type="text" id="e-text" placeholder="內容">
-    <button onclick="addEvent()">新增活動</button>
+<div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>每月時間表</h1>
+        <button onclick="window.toggleAdmin()">管理員模式</button>
+    </div>
+
+    <div class="admin-panel" id="admin-panel">
+        <h3>🛠 管理員中控台</h3>
+        <input type="number" id="e-day" placeholder="日期 (數字)">
+        <input type="text" id="e-time" placeholder="時間 (如 19:00)">
+        <input type="text" id="e-text" placeholder="活動內容">
+        <button onclick="window.addEvent()">新增活動</button>
+        <button onclick="window.syncAndSave()" style="background:#4CAF50; color:white;">儲存至資料庫</button>
+    </div>
+
+    <div id="calendar" class="grid"></div>
 </div>
 
-<div class="grid" id="calendar"></div>
-
 <script>
-    const client = supabase.createClient('YOUR_URL', 'YOUR_KEY');
-    
-    // 渲染日曆
-    async function fetchEvents() {
-        const { data } = await client.from('events').select('*');
-        render(data);
-    }
+    // 1. 初始化
+    const client = supabase.createClient('https://blqlrxqckiuvgevmakbu.supabase.co', 'sb_publishable_qFXwpuGChVdRwjc9K7prVQ_PgYmlnpG');
 
-    function render(events) {
-        const cal = document.getElementById('calendar');
-        cal.innerHTML = '';
-        for (let i = 1; i <= 30; i++) {
-            const dayStr = `2026-06-${i.toString().padStart(2, '0')}`;
-            const dayEvents = events.filter(e => e.date === dayStr);
-            
-            cal.innerHTML += `
-                <div class="cell" ondrop="drop(event, '${dayStr}')" ondragover="allowDrop(event)">
-                    <div>${i}</div>
-                    ${dayEvents.map(e => `
-                        <div class="event" draggable="true" ondragstart="drag(event, ${e.id})">
-                            ${e.time} ${e.content}
-                            <span onclick="deleteEvent(${e.id})" style="cursor:pointer">×</span>
-                        </div>
-                    `).join('')}
-                </div>`;
-        }
-    }
+    // 2. 狀態
+    let isAdmin = false;
+    let currentMonth = "2026-06";
+    let events = {}; // 格式: { "2026-06": [{day: 1, time: "10:00", text: "測試"}] }
 
-    // 新增
-    async function addEvent() {
-        const date = document.getElementById('e-date').value;
-        const time = document.getElementById('e-time').value;
-        const content = document.getElementById('e-text').value;
-        await client.from('events').insert({ date, time, content });
-        fetchEvents();
-    }
+    // 3. 核心函式 (全部掛載到 window)
+    window.render = function() {
+        const calendarEl = document.getElementById('calendar');
+        calendarEl.innerHTML = '';
+        ['日', '一', '二', '三', '四', '五', '六'].forEach(d => calendarEl.innerHTML += `<div class="cell" style="font-weight:bold">${d}</div>`);
+        
+        for (let d = 1; d <= 30; d++) {
+            const dayEvents = (events[currentMonth] || []).filter(e => e.day === d);
+            calendarEl.innerHTML += `
+                <div class="cell" onclick="window.setFormDate(${d})">
+                    <div class="day-num">${d}</div>
+                    ${dayEvents.map(e => `<div class="event"><b>${e.time}</b> ${e.text}</div>`).join('')}
+                </div>`;
+        }
+    };
 
-    // 刪除
-    async function deleteEvent(id) {
-        await client.from('events').delete().eq('id', id);
-        fetchEvents();
-    }
+    window.addEvent = function() {
+        const day = parseInt(document.getElementById('e-day').value);
+        const time = document.getElementById('e-time').value;
+        const text = document.getElementById('e-text').value;
+        
+        if (!day || !text) return alert("請填寫日期與活動內容");
+        if (!events[currentMonth]) events[currentMonth] = [];
+        
+        events[currentMonth].push({ day, time, text });
+        window.render();
+    };
 
-    // 拖曳功能
-    function allowDrop(ev) { ev.preventDefault(); }
-    function drag(ev, id) { ev.dataTransfer.setData("id", id); }
-    async function drop(ev, newDate) {
-        ev.preventDefault();
-        const id = ev.dataTransfer.getData("id");
-        await client.from('events').update({ date: newDate }).eq('id', id);
-        fetchEvents();
-    }
+    window.setFormDate = function(d) {
+        if (!isAdmin) return;
+        document.getElementById('e-day').value = d;
+    };
 
-    fetchEvents();
+    window.syncAndSave = async function() {
+        const { error } = await client.from('events').update({ calendar_events: events }).eq('id', 1);
+        if (error) alert("失敗: " + error.message);
+        else alert("同步成功！");
+    };
+
+    window.toggleAdmin = function() {
+        isAdmin = !isAdmin;
+        document.body.classList.toggle('admin-mode', isAdmin);
+    };
+
+    // 4. 初始化讀取
+    document.addEventListener('DOMContentLoaded', async () => {
+        const { data } = await client.from('events').select('*').eq('id', 1).single();
+        if (data && data.calendar_events) {
+            events = data.calendar_events;
+            window.render();
+        } else {
+            window.render();
+        }
+    });
 </script>
 </body>
 </html>
