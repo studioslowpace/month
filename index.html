@@ -83,8 +83,21 @@
         
         /* 電腦版正常活動樣式 */
         .event { font-size: 13px; padding: 5px 8px; margin: 5px 0; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); color: #333; line-break: anywhere; }
-        .evt-time { font-weight: bold; display: block; margin-bottom: 2px; }
-        .evt-text { display: inline; }
+        .evt-time { text-align: right; font-weight: bold; display: block; margin-bottom: 2px; }
+        .evt-text {
+    /* 允許在空白處換行 */
+    white-space: normal; 
+    
+    /* 確保單字不會溢出（如果單字很長，例如網址或長英文） */
+    word-break: break-all; 
+    
+    /* 強制在遇到空格時斷行 */
+    word-wrap: break-word; 
+    
+    /* 文字靠右 */
+    text-align: right;
+    display: block;
+}
         
         /* 管理中控台 */
         #admin-panel { max-height: 0; overflow: hidden; background: #fffdf0; border-radius: 12px; padding: 0 20px; transition: all 0.4s ease; margin-top: 0; }
@@ -119,84 +132,14 @@
         .month-select-btn:hover { background: #eef5ee; border-color: var(--primary-green); }
         .month-select-btn.active { background: var(--primary-green); color: white; border-color: var(--primary-green); font-weight: bold; }
 
-        /* 📱 手機版專屬 RWD 覆蓋樣式 */
-        @media (max-width: 600px) {
-            .header-section { 
-                flex-direction: column; align-items: center; text-align: center; margin-bottom: 15px; gap: 10px;
-            }
-            .title-area { 
-                flex-direction: row !important; 
-                justify-content: center; 
-                align-items: center; 
-                gap: 12px; 
-                width: 100%;
-            }
-            .title-text-group { text-align: left; }
-            .title-area h1 { font-size: 10px !important; letter-spacing: 0px; margin: 0 0 2px 0; display: block; }
-
-            .year-big { font-size: 14px; display: inline-block; white-space: nowrap; }
-            #month-display { font-size: 12px; margin-bottom: 0; display: inline-block; white-space: nowrap; }
-            .logo-btn { height: 35px; width: auto; }
-
-            .legend-box { justify-content: center; width: 100%; margin-top: 5px; gap: 8px; }
-            .legend-item { font-size: 10px; padding: 4px 6px; }
-            .box { width: 14px; height: 14px; }
-
-            /* 🛠️ 手機版格子：固定正方形外觀、不再因活動字數拉長 */
-            .cell { 
-                min-height: 55px; 
-                height: 55px !important; 
-                padding: 2px; 
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-                align-items: center;
-                overflow: hidden;
-            }
-            .day-num { font-size: 11px; margin-bottom: 0; text-align: right; width: 100%; padding-right: 2px; box-sizing: border-box; }
-            .weekday { font-size: 13px; padding: 6px 0; }
-
-            /* 🛠️ 關鍵核心：手機版隱藏活動內容，僅作為有顏色的底色方塊，或者將時間直接水平呈現 */
-            .event { 
-                position: absolute;
-                top: 0; left: 0; width: 100%; height: 100%;
-                margin: 0; padding: 0;
-                border-radius: 0;
-                box-shadow: none;
-                z-index: 1;
-                display: flex;
-                align-items: flex-end;    /* 時間推到最底下 */
-                justify-content: center;
-            }
-            
-            /* 讓日期數字浮在顏色之上 */
-            .day-num { position: relative; z-index: 2; }
-
-            /* 🛠️ 核心：手機版只顯示簡寫時間（支援 pre-line 換行、橫向置中） */
-            .evt-time { 
-                display: block !important;
-                font-size: 9px;
-                font-weight: normal;
-                color: #222;
-                background: rgba(255, 255, 255, 0.4); /* 微透明背景確保時間數字清晰可讀 */
-                width: 100%;
-                text-align: center;
-                white-space: pre-line; /* 👈 關鍵：這行能讓 \n 變成真正的換行 */
-                padding: 1px 0;
-                letter-spacing: -0.3px;
-                transform: scale(0.9);
-            }
-            .evt-text { 
-                display: none !important; /* 👈 完全隱藏活動詳細文字 */
-            } 
-
-            .row { flex-direction: column; align-items: stretch; gap: 8px; }
-            .row input, .row select, .row button { width: 100% !important; }
-            #admin-panel h3 { flex-direction: column; align-items: center; gap: 8px; }
-        }
-        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center; }
-.loading-overlay.active { display: flex; }
+#modal-action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap; /* 允許換行 */
+}
+#modal-action-buttons button {
+    flex: 1; /* 讓按鈕平分寬度 */
+}
     </style>
 </head>
 <body>
@@ -273,6 +216,10 @@
                 <button onclick="submitUpdateType()" style="background:var(--primary-green)">💾 儲存修改</button>
             </div>
         </div>
+        <div class="modal-buttons" style="margin-bottom: 20px; justify-content: center; gap: 10px;">
+            <button onclick="moveType(-1)" style="background:#555">⬆️ 上移</button>
+            <button onclick="moveType(1)" style="background:#555">⬇️ 下移</button>
+        </div>
     </div>
 </div>
 
@@ -339,6 +286,8 @@ const supabaseKey = 'sb_publishable_qFXwpuGChVdRwjc9K7prVQ_PgYmlnpG';
 const TABLE_NAME = 'events'; // ⚠️ 請務必填入你在 Supabase 的 Table 名稱
 const client = supabase.createClient(supabaseUrl, supabaseKey);
 
+const holidays = ["2026-01-01", "2026-02-17", "2026-02-18", "2026-02-19", "2026-04-03", "2026-04-04", "2026-04-06", "2026-04-07", "2026-05-01", "2026-05-25", "2026-06-19", "2026-07-01", "2026-09-26", "2026-10-01", "2026-10-19", "2026-12-25", "2026-12-26"];
+
 // --- 全域變數 ---
 let currentMonth = "2026-06";
 let isAdmin = false;
@@ -356,6 +305,7 @@ async function fetchData() {
         };
         renderCalendar();
         renderLegend();
+        renderMonthList();
     }
 }
 
@@ -385,6 +335,13 @@ function renderCalendar() {
 function renderLegend() {
     document.getElementById('legend-list').innerHTML = dbData.types.map(t => `<div class="legend-item"><div class="box" style="background:${t.color}"></div>${t.name}</div>`).join('');
     document.getElementById('e-type').innerHTML = dbData.types.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+const container = document.getElementById('legend-list');
+    // 加入 onclick 事件讓你可以點擊類型進行編輯
+    container.innerHTML = dbData.types.map((t, index) => `
+        <div class="legend-item" onclick="openTypeModal(${index})" style="cursor:pointer;">
+            <div class="box" style="background:${t.color}"></div>${t.name}
+        </div>
+    `).join('');
 }
 
 // --- 管理員動作 (明確掛載到 window) ---
@@ -435,10 +392,168 @@ async function saveDB() {
     fetchData();
 }
 
+window.renderMonthList = function() {
+    const container = document.getElementById('popup-month-list');
+    if (!container) return; // 確保容器存在
+    
+    container.innerHTML = dbData.months.map(m => `
+        <button class="month-select-btn ${m === currentMonth ? 'active' : ''}" 
+                onclick="switchMonth('${m}')">
+            ${m}
+        </button>
+    `).join('');
+};
+
+window.switchMonth = function(m) {
+    currentMonth = m;
+    fetchData(); // 重新獲取該月份資料
+    window.closeModal('switchMonthModal');
+};
+
+window.submitDelMonth = function() {
+    if (!isAdmin) return;
+
+    // 1. 從月份清單中移除
+    dbData.months = dbData.months.filter(m => m !== currentMonth);
+    
+    // 2. 從活動資料中移除該月份
+    delete dbData.events[currentMonth];
+    
+    // 3. 切換回第一個可用月份，若無則清空
+    currentMonth = dbData.months.length > 0 ? dbData.months[0] : "";
+    
+    // 4. 儲存至資料庫
+    saveDB();
+    
+    window.closeModal('delMonthModal');
+    alert("該月份已刪除");
+};
+
+window.openDelModal = function() {
+    document.querySelectorAll('.text-current-month').forEach(el => el.innerText = currentMonth);
+    window.openModal('delMonthModal');
+};
+
+let editingTypeIndex = -1;
+
+window.openTypeModal = function(index) {
+    if (!isAdmin) return;
+    editingTypeIndex = index;
+    const type = dbData.types[index];
+    document.getElementById('manage-type-target').innerText = type.name;
+    document.getElementById('manage-type-name').value = type.name;
+    document.getElementById('manage-type-color').value = type.color;
+    window.openModal('typeManageModal');
+};
+
+window.submitUpdateType = function() {
+    const newName = document.getElementById('manage-type-name').value;
+    const newColor = document.getElementById('manage-type-color').value;
+    
+    dbData.types[editingTypeIndex] = { name: newName, color: newColor };
+    saveDB();
+    window.closeModal('typeManageModal');
+};
+
+window.submitDeleteType = function() {
+    dbData.types.splice(editingTypeIndex, 1);
+    saveDB();
+    window.closeModal('typeManageModal');
+};
+
+// --- 移動順序 (移動位置) ---
+window.moveType = function(direction) {
+    // direction 為 -1 (上移) 或 1 (下移)
+    const index = editingTypeIndex;
+    const newIndex = index + direction;
+    
+    if (newIndex >= 0 && newIndex < dbData.types.length) {
+        const temp = dbData.types[index];
+        dbData.types[index] = dbData.types[newIndex];
+        dbData.types[newIndex] = temp;
+        
+        editingTypeIndex = newIndex; // 更新當前編輯索引
+        saveDB();
+    }
+};
+
+// --- 合併後的 handleCellClick ---
+window.handleCellClick = function(day) {
+    // 1. 如果是管理員模式，且你有點擊輸入框的需求 (如原本的邏輯)
+    // 我們可以加入一個判斷：如果是在編輯模式下，才填入日期；否則開啟彈窗
+    if (isAdmin && document.getElementById('e-day')) {
+        document.getElementById('e-day').value = day;
+    }
+
+    // 2. 開啟活動詳細資訊彈窗
+    const dayEvents = (dbData.events[currentMonth] || []).filter(e => e.day === day);
+    
+    document.getElementById('modal-action-title').innerText = `${day}日 活動資訊`;
+    const preview = document.getElementById('info-event-preview');
+    const buttons = document.getElementById('modal-action-buttons');
+    
+    if (dayEvents.length === 0) {
+        preview.innerHTML = "今日無活動。";
+        buttons.innerHTML = `<button onclick="window.closeModal('eventActionModal')" style="background:#888; width:100%">關閉</button>`;
+    } else {
+        preview.innerHTML = dayEvents.map((e, idx) => `
+            <div style="margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid #eee;">
+                <b>${e.time}</b> : ${e.text} <small>(${e.type})</small>
+            </div>
+        `).join('');
+        
+        buttons.innerHTML = `
+            <button onclick="window.closeModal('eventActionModal')" style="background:#888">關閉</button>
+            ${isAdmin ? `<button onclick="deleteEventsOfDay(${day})" style="background:var(--danger-red)">🗑 刪除今日所有活動</button>` : ''}
+        `;
+    }
+    
+    window.openModal('eventActionModal');
+};
+
+// --- 執行刪除 ---
+window.deleteEventsOfDay = function(day) {
+    if (!confirm(`確定要刪除 ${day} 日的所有活動嗎？`)) return;
+    
+    // 過濾掉當天活動
+    dbData.events[currentMonth] = dbData.events[currentMonth].filter(e => e.day !== day);
+    
+    // 更新資料庫與重繪畫面
+    saveDB(); 
+    window.closeModal('eventActionModal');
+};
+
+// 點擊「編輯」按鈕時觸發
+window.openEditModal = function(day, index) {
+    const event = dbData.events[currentMonth].filter(e => e.day === day)[index];
+    document.getElementById('edit-index').value = index; // 暫存 index
+    document.getElementById('edit-day').value = day;
+    document.getElementById('edit-time').value = event.time;
+    document.getElementById('edit-text').value = event.text;
+    document.getElementById('edit-type').value = event.type;
+    
+    window.closeModal('eventActionModal');
+    window.openModal('editEventModal');
+};
+
+// 儲存修改內容
+window.submitEditEvent = function() {
+    const day = parseInt(document.getElementById('edit-day').value);
+    const index = parseInt(document.getElementById('edit-index').value);
+    
+    // 找到該天活動列表中的特定項目並修改
+    let dayEvents = dbData.events[currentMonth].filter(e => e.day === day);
+    dayEvents[index].time = document.getElementById('edit-time').value;
+    dayEvents[index].text = document.getElementById('edit-text').value;
+    dayEvents[index].type = document.getElementById('edit-type').value;
+    
+    saveDB();
+    window.closeModal('editEventModal');
+};
+
 // --- 輔助 ---
 window.openModal = (id) => document.getElementById(id).classList.add('active');
 window.closeModal = (id) => document.getElementById(id).classList.remove('active');
-window.handleCellClick = (d) => { if(isAdmin) document.getElementById('e-day').value = d; };
 
 document.addEventListener('DOMContentLoaded', fetchData);
 </script>
