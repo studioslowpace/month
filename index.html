@@ -6,101 +6,101 @@
     <title>客舍時間表</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* 你的原版 CSS 樣式 */
-        :root { --bg-color: #f7f5f2; --card-bg: #ffffff; --primary-blue: #2b579a; --danger-red: #d9534f; --primary-green: #4CAF50; }
+        :root { --primary-blue: #2b579a; --bg-color: #f7f5f2; }
         body { font-family: sans-serif; background: var(--bg-color); padding: 20px; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid #eee; border-left: 1px solid #eee; }
-        .cell { min-height: 120px; border-right: 1px solid #eee; border-bottom: 1px solid #eee; padding: 10px; cursor: pointer; }
-        .cell:hover { background: #f9f9f9; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 16px; }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid #ddd; border-left: 1px solid #ddd; }
+        .cell { min-height: 120px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 8px; cursor: pointer; }
         .day-num { font-weight: bold; margin-bottom: 5px; }
-        .event { font-size: 12px; padding: 3px; margin: 2px 0; border-radius: 3px; background: #e0e0e0; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-overlay.active { display: flex; }
-        .modal-card { background: white; padding: 25px; border-radius: 12px; width: 350px; }
-        .admin-only { display: none; margin-top: 20px; padding: 20px; border: 1px solid #ffa000; background: #fffdf0; }
-        body.admin-mode .admin-only { display: block; }
+        .event { font-size: 12px; padding: 4px; margin: 2px 0; border-radius: 4px; background: #e0e0e0; }
+        .admin-panel { display: none; margin: 20px 0; padding: 20px; background: #fffdf0; border: 2px dashed #ffa000; }
+        body.admin-mode .admin-panel { display: block; }
+        input, select, button { padding: 8px; margin: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header-section">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>每月時間表</h1>
-        <div>
-            <span id="month-display" style="font-size:20px; font-weight:bold; cursor:pointer;" onclick="window.openModal('switchMonthModal')">載入中...</span>
-            <button onclick="window.toggleAdmin()">管理員</button>
-        </div>
+        <button onclick="window.toggleAdmin()">管理員模式</button>
     </div>
-    <div id="calendar" class="grid"></div>
-    <div class="admin-only" id="admin-panel">
-        <h3>管理員中控台</h3>
-        <input type="number" id="e-day" placeholder="日期">
+
+    <div class="admin-panel" id="admin-panel">
+        <h3>🛠 管理員中控台</h3>
+        <input type="number" id="e-day" placeholder="日期 (數字)">
+        <input type="text" id="e-time" placeholder="時間 (如 19:00)">
         <input type="text" id="e-text" placeholder="活動內容">
         <button onclick="window.addEvent()">新增活動</button>
-        <button onclick="window.syncAndSave()">強制同步</button>
+        <button onclick="window.syncAndSave()" style="background:#4CAF50; color:white;">儲存至資料庫</button>
     </div>
-</div>
 
-<div class="modal-overlay" id="authModal">
-    <div class="modal-card">
-        <h3>輸入管理密碼</h3>
-        <input type="password" id="admin-pwd">
-        <button onclick="window.verifyAdmin()">登入</button>
-    </div>
+    <div id="calendar" class="grid"></div>
 </div>
 
 <script>
-    // 1. 初始化 Supabase
+    // 1. 初始化
     const client = supabase.createClient('https://blqlrxqckiuvgevmakbu.supabase.co', 'sb_publishable_qFXwpuGChVdRwjc9K7prVQ_PgYmlnpG');
 
-    // 2. 全域狀態
+    // 2. 狀態
     let isAdmin = false;
     let currentMonth = "2026-06";
-    let events = {};
-    let types = [];
+    let events = {}; // 格式: { "2026-06": [{day: 1, time: "10:00", text: "測試"}] }
 
-    // 3. 核心功能
+    // 3. 核心函式 (全部掛載到 window)
     window.render = function() {
         const calendarEl = document.getElementById('calendar');
         calendarEl.innerHTML = '';
-        ['日', '一', '二', '三', '四', '五', '六'].forEach(d => calendarEl.innerHTML += `<div class="cell">${d}</div>`);
+        ['日', '一', '二', '三', '四', '五', '六'].forEach(d => calendarEl.innerHTML += `<div class="cell" style="font-weight:bold">${d}</div>`);
         
         for (let d = 1; d <= 30; d++) {
             const dayEvents = (events[currentMonth] || []).filter(e => e.day === d);
             calendarEl.innerHTML += `
                 <div class="cell" onclick="window.setFormDate(${d})">
                     <div class="day-num">${d}</div>
-                    ${dayEvents.map(e => `<div class="event">${e.text}</div>`).join('')}
+                    ${dayEvents.map(e => `<div class="event"><b>${e.time}</b> ${e.text}</div>`).join('')}
                 </div>`;
         }
-        document.getElementById('month-display').innerText = currentMonth;
     };
 
     window.addEvent = function() {
         const day = parseInt(document.getElementById('e-day').value);
+        const time = document.getElementById('e-time').value;
         const text = document.getElementById('e-text').value;
+        
+        if (!day || !text) return alert("請填寫日期與活動內容");
         if (!events[currentMonth]) events[currentMonth] = [];
-        events[currentMonth].push({ day, text });
+        
+        events[currentMonth].push({ day, time, text });
         window.render();
+    };
+
+    window.setFormDate = function(d) {
+        if (!isAdmin) return;
+        document.getElementById('e-day').value = d;
     };
 
     window.syncAndSave = async function() {
         const { error } = await client.from('events').update({ calendar_events: events }).eq('id', 1);
-        if (error) alert("同步失敗: " + error.message);
-        else alert("同步成功");
+        if (error) alert("失敗: " + error.message);
+        else alert("同步成功！");
     };
 
-    window.verifyAdmin = function() {
-        if (document.getElementById('admin-pwd').value === "slow2024") {
-            isAdmin = true;
-            document.body.classList.add('admin-mode');
-            window.closeModal('authModal');
-        } else alert("密碼錯誤");
+    window.toggleAdmin = function() {
+        isAdmin = !isAdmin;
+        document.body.classList.toggle('admin-mode', isAdmin);
     };
 
-    window.toggleAdmin = () => isAdmin ? (isAdmin=false, document.body.classList.remove('admin-mode')) : window.openModal('authModal');
-    window.openModal = (id) => document.getElementById(id).classList.add('active');
-    window.closeModal = (id) => document.getElementById(id).classList.remove('active');
-    window.setFormDate
+    // 4. 初始化讀取
+    document.addEventListener('DOMContentLoaded', async () => {
+        const { data } = await client.from('events').select('*').eq('id', 1).single();
+        if (data && data.calendar_events) {
+            events = data.calendar_events;
+            window.render();
+        } else {
+            window.render();
+        }
+    });
+</script>
+</body>
+</html>
