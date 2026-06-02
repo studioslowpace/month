@@ -508,6 +508,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } catch(e) { console.error("初始化失敗:", e); }
 });
+
+    async function testSave() {
+    const { data, error } = await client
+        .from('events')
+        .update({ 
+            calendar_events: { "2026-06-02": ["測試行程"] },
+            calendar_months: ["2026-06"],
+            calendar_types: ["工作", "個人"]
+        })
+        .eq('id', 1);
+
+    if (error) console.error("寫入失敗:", error);
+    else console.log("寫入成功！");
+}
 </script>
 </body>
 </html>
