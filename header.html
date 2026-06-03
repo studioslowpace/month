@@ -28,6 +28,11 @@
         width: auto;
     }
 
+    .logo-link:hover {
+    cursor: pointer;
+    opacity: 0.8; /* 加點小互動，滑過時稍微變淡，讓使用者知道這是可點擊的 */
+    transition: opacity 0.2s;
+}
     .nav-links {
         display: flex;
         gap: 35px;
@@ -83,9 +88,11 @@
 <header class="navbar">
     <div class="navbar-container">
         <div class="logo-area">
+            <a href="index.html" class="logo-link" aria-label="回到首頁">
             <div class="logo-icon">
                 <img src="images/logo-rectangular.png" alt="空間客舍 Logo">
             </div>
+            </a>
             <button class="menu-toggle" aria-label="打開選單">☰</button>
         </div>
         

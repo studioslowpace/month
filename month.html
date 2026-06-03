@@ -155,6 +155,172 @@
 #modal-action-buttons button {
     flex: 1; /* 讓按鈕平分寬度 */
 }
+/* 📱 手機版專屬 RWD (響應式設計) 覆蓋樣式 */
+/* 當裝置螢幕寬度小於 600px 時，以下規則才會生效 */
+@media (max-width: 600px) {
+
+    /* 1. 調整 body 的外距 */
+    body {
+        padding: 5px !important; /* 將原本的 10px 縮減 */
+    }
+
+    /* 2. 重置 container 的寬度與內距，達成滿版效果 */
+    .container {
+        max-width: 100% !important; /* 取消寬度限制 */
+        margin: 0 !important;       /* 移除自動置中外距 */
+        padding: 12px !important;   /* 縮減內部空間，留給內容 */
+        border-radius: 12px !important;
+        box-shadow: none !important; /* 手機版可移除陰影增加視覺寬度 */
+    }
+    /* 調整頂部區塊的排版，改為垂直堆疊 */
+    .header-section { 
+        flex-direction: column;    /* 設定 flex 排列方向為垂直 */
+        align-items: right;       /* 水平置中內容 */
+        text-align: right;        /* 文字置中 */
+        margin-bottom: 15px;       /* 區塊下方留白 15px */
+        gap: 10px;                 /* 內部元素間距 10px */
+    }
+
+    /* 標題區域調整為水平並排 */
+    .title-area { 
+        order: 1;        /*  order 的預設值是 0。數值越小，排列越靠前；數值越大，排列越靠後。*/
+        flex-direction: row !important; /* 強制設定為水平排列 */
+        justify-content: right;        /* 內容水平置中 */
+        align-items: right;            /* 內容垂直置中 */
+        gap: 12px;                      /* 元素間距 12px */
+        width: 100%;                    /* 寬度佔滿父容器 */
+    }
+
+    /* 標題文字組靠左對齊 */
+    .title-text-group { text-align: right; }
+
+    /* 調整標題 H1 的大小，移除字距與設定間距 */
+    .title-area h1 { 
+        font-size: 18px !important;     /* 強制字體大小為 10px */
+        letter-spacing: 0px;            /* 字元間距為 0 */
+        margin: 0 0 1px 0;              /* 外邊距設定：上0 右0 下2 左0 */
+        display: block;                 /* 設定為區塊元素 */
+        text-align: center; 
+    }
+
+    /* 年份顯示設定：固定大小，不允許自動斷行 */
+    .year-big { 
+        font-size: 12px; 
+        display: inline-block;          /* 轉為行內區塊元素 */
+        white-space: nowrap;            /* 強制文字不換行 */
+    }
+
+    /* 月份顯示設定 */
+    #month-display { 
+        font-size: 12px; 
+        margin-bottom: 0; 
+        display: inline-block; 
+        white-space: nowrap; 
+    }
+
+    /* 標誌按鈕高度自適應 */
+    .logo-btn { height: 35px; width: auto; }
+
+    /* 圖例區塊排版 */
+    .legend-box {
+        order: 2;
+        justify-content: left;        /* 水平置中 */
+        width: 100%; 
+        margin-top: 5px; 
+        gap: 8px; 
+    }
+    
+    /* 圖例項目字型與內距 */
+    .legend-item { font-size: 8px; padding: 3px 4px; } /* padding: 上下(4px) 左右(6px); */
+    
+    /* 圖例顏色方塊尺寸 */
+    .box { width: 8px; height: 8px; }
+
+    /* 日曆單元格(每一格)設定 */
+    .cell { 
+        min-height: 55px;               /* 最小高度 */
+        height: 55px !important;        /* 強制固定高度 */
+        padding: 2px;                   /* 內距 */
+        position: relative;             /* 相對定位，供內部絕對定位元素使用 */
+        display: flex;                  /* 啟用 Flexbox */
+        flex-direction: column;         /* 垂直排列內部內容 */
+        justify-content: space-between; /* 內容垂直分散對齊 */
+        align-items: center;            /* 水平置中 */
+        overflow: hidden;               /* 隱藏超出格子的內容 */
+    }
+
+    /* 日期數字設定 */
+    .day-num { 
+        font-size: 11px; 
+        margin-bottom: 0; 
+        text-align: right;              /* 數字靠右 */
+        width: 100%; 
+        padding-right: 2px; 
+        box-sizing: border-box;         /* 邊框包含在寬度計算內 */
+        position: relative; 
+        z-index: 2;                     /* 提高層級，確保數字顯示在最上層 */
+    }
+    
+    /* 星期標題字體與內距 */
+    .weekday { font-size: 13px; padding: 6px 0; }
+
+    /* 活動資訊區塊設定 */
+    .event { 
+        position: relative;        /* 改為相對定位，讓活動依照順序排列，不再全部疊在原點 */
+        top: 0; left: 0; width: 100%; height: 100%;
+        margin: 0; 
+        padding: 2px;             
+        margin-bottom: 2px;        /* 活動與活動之間的垂直間距 */
+        box-sizing: border-box;   
+        z-index: 1;                     /* 層級低於日期數字 */
+        display: flex;
+        flex-direction: column;         /* 垂直排列內容 */
+        justify-content: cneter;    /* 從中間開始排列 */
+        align-items: flex-end;          /* 靠右對齊 */
+
+    }
+
+    /* 活動時間文字設定 */
+    .evt-time { 
+        display: block !important;
+        font-size: 6.5px;                 /* 建議字體大小 */
+        font-weight: normal;            /* 字體粗細正常 */
+        color: #222;                    /* 深灰色文字 */
+        width: 100%; 
+        text-align: right;              /* 文字靠右 */
+        white-space: normal;            /* 允許文字換行 */
+        word-break: break-all;          /* 強制斷字，防止溢出 */
+        line-height: 1.1;               /* 設定行高，使行距緊湊 */
+        letter-spacing: -0.5px;         /* 壓縮字元間距，容納更多內容 */
+        margin-bottom: 1px;             /* 與下方內容留空 */
+    }
+
+    /* 活動內容文字設定 */
+    .evt-text { 
+        display: none !important;
+    }
+
+/* 🛠️ 表單列（.row）容器設置：處理行動裝置的輸入介面 */
+    .row { 
+        flex-direction: column;         /* 將原本橫向的 flex 佈局強制改為垂直排列 (column) */
+        align-items: stretch;           /* 讓內部元素水平延伸，填滿整個容器寬度 */
+        gap: 8px;                       /* 設定每個表單元件之間的間距為 8px */
+    }
+
+    /* 🛠️ 表單內部元件強制佈局：確保在手機上統一填滿寬度 */
+    .row input,                         /* 選擇所有文字輸入框 */
+    .row select,                        /* 選擇所有下拉選單 */
+    .row button {                       /* 選擇所有按鈕 */
+        width: 100% !important;         /* 強制將寬度設為 100%，確保不會因為內容過短而對齊跑版 */
+    }
+
+    /* 🛠️ 管理面板標題區塊設置：確保標題在手機上垂直對齊 */
+    #admin-panel h3 { 
+        flex-direction: column;         /* 標題內部若有圖示或文字，改為垂直排列 */
+        align-items: center;            /* 將所有內容水平置中，適合小螢幕瀏覽 */
+        gap: 8px;                       /* 標題內部元素的間距 */
+    }
+    }
     </style>
 </head>
 <body>
