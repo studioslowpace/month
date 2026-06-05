@@ -14,6 +14,23 @@
     <!-- 引入 FontAwesome 圖標 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+                * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+        }
+        body {
+            background-color: #ebf3dd; 
+            font-family: "Noto Sans TC", sans-serif;
+            color: #4A4A4A;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
         /* 隱藏滾動條但保持滾動功能 (用於手機橫滑相片) */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
