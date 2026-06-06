@@ -958,9 +958,9 @@ window.clearEventForm = function() {
 };
 
 
-// --- 💡 僅針對活動類型標籤文字優化、其餘完全不碰的原汁原味版 ---
+// --- 💡 隱形沙盒：精準修正標籤排版、保證 Logo 絕不走位完美版 ---
 window.exportEventImage = function() {
-    console.log("正在啟動隱形沙盒，僅針對頂部活動類型文字進行防爆開優化...");
+    console.log("正在啟動隱形沙盒，進行標籤物理合併，確保 Logo 絕不走位...");
 
     // 1. 抓取你的日曆主範圍 (.container)
     const targetElement = document.querySelector('.container'); 
@@ -981,13 +981,11 @@ window.exportEventImage = function() {
     // 3. 【建立隱形沙盒】
     const sandbox = targetElement.cloneNode(true);
     
-    // 設定沙盒為遊客標準滿版尺寸，放置在螢幕外拍照，防止管理員模式擠壓變形
+    // 保持隱形，放置於螢幕外
     sandbox.style.position = 'absolute';
     sandbox.style.left = '-9999px';
     sandbox.style.top = '0';
-    sandbox.style.width = '1200px';       // 鎖定 1200px 遊客標準寬度
-    sandbox.style.maxWidth = '1200px';
-    sandbox.style.minWidth = '1200px';
+    // ⚠️ 移除先前強加的 1240px 暴力寬度限制，改回跟網頁原本標準一模一樣，確保 Logo 留在原位
     sandbox.style.boxShadow = 'none';
     sandbox.style.border = 'none';
     sandbox.style.transform = 'none';
@@ -996,30 +994,48 @@ window.exportEventImage = function() {
     const clonedAdmin = sandbox.querySelector('#admin-panel');
     if (clonedAdmin) clonedAdmin.remove();
 
-    // 💡【精準鎖定：只修改活動類型（Legend）區塊內的文字】
-    // 根據您上傳的截圖，我們直接抓取頂部的 legend 清單或區塊
-    // 請確認您的 HTML 頂部活動類型容器的 class 或 id 是否符合以下選取器（通常包含 legend）
+    // 🔥【核心修正：物理合併標籤】
+    // 找出沙盒中的第一行容器與第二行容器
+    const mainLegendList = sandbox.querySelector('#legend-list');
+    const additionalLegendBox = sandbox.querySelector('#new-legend-list');
+
+    if (mainLegendList && additionalLegendBox) {
+        // 1. 強制把第一行原本的「分散對齊」或限制取消，改成標準靠左、自然緊密排列
+        mainLegendList.style.setProperty('display', 'flex', 'important');
+        mainLegendList.style.setProperty('justify-content', 'flex-start', 'important');
+        mainLegendList.style.setProperty('flex-wrap', 'wrap', 'important'); // 允許自然接續
+        mainLegendList.style.setProperty('gap', '15px', 'important');        // 標籤之間的固定漂亮間距
+
+        // 2. 拔出第二行裡面的所有標籤，統統塞進第一行的尾巴
+        while (additionalLegendBox.children.length > 0) {
+            mainLegendList.appendChild(additionalLegendBox.firstElementChild);
+        }
+
+        // 3. 把已經變空的第二行完全隱藏，不留痕跡
+        additionalLegendBox.style.setProperty('display', 'none', 'important');
+    }
+
+    // 💡【細節優化：修復 html2canvas 文字多空格 Bug】
     const legendArea = sandbox.querySelectorAll('[class*="legend"], [id*="legend"]');
-    
     legendArea.forEach(area => {
-        // 強制活動類型區域絕對不准自動折行
-        area.style.setProperty('white-space', 'nowrap', 'important');
-        area.style.setProperty('flex-wrap', 'nowrap', 'important');
-        
-        // 抓取裡面的所有子節點（只針對標籤文字進行物理字距校正）
+        if (area.className && area.className.includes('legend-item')) {
+            area.style.setProperty('display', 'inline-flex', 'important');
+            area.style.setProperty('align-items', 'center', 'important');
+            area.style.setProperty('gap', '6px', 'important'); // 色塊與文字的距離
+            area.style.setProperty('margin', '0', 'important');
+        }
+
         const allItems = area.querySelectorAll('*');
         allItems.forEach(el => {
             el.style.setProperty('font-family', '"Microsoft JhengHei", "Apple LiGothic Medium", "Noto Sans TC", sans-serif', 'important');
             el.style.setProperty('white-space', 'nowrap', 'important');
             
-            // 如果是純文字節點，直接縮緊字距，物理抵銷 html2canvas 的多加空格 Bug
             if (el.childNodes.length > 0) {
                 el.childNodes.forEach(node => {
                     if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim() !== '') {
                         const text = node.nodeValue.trim();
                         const newSpan = document.createElement('span');
                         newSpan.textContent = text;
-                        // 僅針對這裡的文字縮緊字距（-0.3px），強迫「時間」與「分享會」緊密貼合不拆開
                         newSpan.style.setProperty('letter-spacing', '-0.3px', 'important');
                         newSpan.style.setProperty('word-spacing', '0px', 'important');
                         newSpan.style.setProperty('display', 'inline-block', 'important');
@@ -1034,21 +1050,20 @@ window.exportEventImage = function() {
         });
     });
 
-    // 將僅優化頂部標籤文字的「分身」貼到網頁上準備拍照
+    // 將分身貼到網頁上準備拍照
     document.body.appendChild(sandbox);
 
-    // 4. 開始執行截圖
+    // 4. 開始執行截圖 (不強加視窗寬度，維持自然排版)
     html2canvas(sandbox, {
-        useCORS: true,              // 支援外部大頭貼、Logo 完美顯示
+        useCORS: true,
         allowTaint: true,
-        scale: 3,                   // 3 倍高清採樣
+        scale: 3, 
         backgroundColor: webBgColor,
-        letterRendering: false,     
+        letterRendering: false,
         logging: false
     }).then(domCanvas => {
         
-        // 拍照結束，立刻刪除沙盒，還原乾淨的網頁 DOM
-        sandbox.remove();
+        sandbox.remove(); // 拍照結束，立刻刪除沙盒
 
         // 5. 建立最終 4:5 的標準 1080x1350 導出大畫布
         const finalCanvas = document.createElement('canvas');
@@ -1056,11 +1071,9 @@ window.exportEventImage = function() {
         finalCanvas.height = 1350;
         const ctx = finalCanvas.getContext('2d');
 
-        // 開啟最高等級的抗鋸齒
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
-        // 填滿底色
         ctx.fillStyle = webBgColor;
         ctx.fillRect(0, 0, 1080, 1350);
 
@@ -1095,57 +1108,18 @@ window.exportEventImage = function() {
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
-            console.log("活動類型優化、高畫質等比日曆相片導出成功！");
+            console.log("排版完美修復，高畫質相片導出成功！");
         } catch (err) {
             console.error("圖片儲存失敗:", err);
-            alert("導出失敗，建議更換為 Chrome 瀏覽器再試一次。");
+            alert("導出失敗，請重試。");
         }
     }).catch(error => {
         console.error("快照擷取出錯:", error);
-        alert("快照擷取失敗");
         sandbox.remove();
     });
 };
 
-// --- 💡 原生 handleCellClick 事件 ---
-window.handleCellClick = function(day) {
-    console.log("使用者點擊了日期：" + day + " 日");
-    const modal = document.getElementById('eventModal'); 
-    if (modal) {
-        modal.style.display = 'block';
-    }
-};
 
-// --- 💡 獨立宣告 handleCellClick：徹底解決點擊日期格子報錯的問題 ---
-window.handleCellClick = function(day) {
-    console.log("使用者點擊了日期：" + day + " 日");
-    const modal = document.getElementById('eventModal'); 
-    if (modal) {
-        modal.style.display = 'block';
-    }
-};
-
-// --- 💡 獨立宣告 handleCellClick：徹底解決點擊格子報錯的問題 ---
-// 請確保此函數獨立在 exportEventImage 外面，不要被包在大括號內！
-window.handleCellClick = function(day) {
-    console.log("使用者點擊了日期：" + day + " 日");
-    const modal = document.getElementById('eventModal'); 
-    if (modal) {
-        modal.style.display = 'block';
-    }
-};
-
-// --- 💡 獨立宣告 handleCellClick：徹底解決點擊格子報錯的問題 ---
-window.handleCellClick = function(day) {
-    console.log("使用者點擊了日期：" + day + " 日");
-    
-    // 這裡保留你原本管理員模式下點擊格子要彈出視窗（Modal）的程式邏輯
-    // 範例（如果你原先有 modal 功能）：
-    const modal = document.getElementById('eventModal'); 
-    if (modal) {
-        modal.style.display = 'block';
-    }
-};
 // --- 執行刪除 ---
 window.deleteEventsOfDay = function(day) {
     if (!confirm(`確定要刪除 ${day} 日的所有活動嗎？`)) return;
@@ -1241,28 +1215,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 });
 
-// 1. 載入頁首
-    fetch('header.html')
-        .then(response => response.text())
-        .then(data => {
-            const container = document.getElementById('header-container');
-            container.innerHTML = data;
-            setupHeaderMenu(); // 載入後才綁定選單
-        });
-
-    // 2. 載入頁尾並處理年份
-    fetch('footer.html')
-        .then(response => response.text())
-        .then(data => {
-            const footerContainer = document.getElementById('global-footer');
-            footerContainer.innerHTML = data;
-            
-            // 頁尾載入完成後，更新年份
-            const yearSpan = document.getElementById('current-year');
-            if (yearSpan) {
-                yearSpan.textContent = new Date().getFullYear();
-            }
-        });
 
     // 3. 定義 Header 選單邏輯
     function setupHeaderMenu() {
