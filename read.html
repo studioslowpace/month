@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>空間客寫 Slow Pace Newsletter - 圍爐讀書會</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ==========================================
+       1. 全域基礎樣式與環境色設定
+       ========================================== */
+    html, body {
+      vertical-align: baseline;
+      border: 0;
+      outline: 0;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    body {
+      --scrollbar-width: 0px;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      font-family: "Microsoft JhengHei", Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      overflow-x: auto;
+      overflow-y: scroll;
+      /* 使用指定 CMYK 轉出的網頁色 #70b39b */
+      background-color: #70b39b; 
+    }
+    
+    /* 主內容容器限制寬度並置中 */
+    .main-container {
+      line-height: 1.8;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* ==========================================
+       2. 頁首橫幅與 Logo 樣式 (僅在清單模式顯示)
+       ========================================== */
+    .header-area {
+      position: relative;
+      max-width: 100%;
+      margin-bottom: 40px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .banner img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    /* Logo 置於左下角，細緻化縮小縮放 */
+    .logo-btn {
+      position: absolute;
+      left: 15px;
+      bottom: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      z-index: 10;
+      transition: transform 0.2s;
+    }
+    .logo-btn:hover {
+      transform: scale(1.05);
+    }
+    .logo-btn img {
+      max-width: 90px;
+      height: auto;
+      display: block;
+      opacity: 0.9;
+    }
+
+    /* ==========================================
+       3. 讀書會卡片清單格線排版 (108:135 相片比例)
+       ========================================== */
+    .grid-container {
+      display: grid;
+      /* 自動滿版格線，每張卡片最少 280px 寬 */
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 40px;
+    }
+
+    /* 單張卡片主體 */
+    .card {
+      background: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card h2 {
+      font-size: 22px;
+      color: #4a3728;
+      text-align: center;
+      margin-top: 0;
+      font-weight: bold;
+      padding: 0 20px;
+    }
+    .card hr {
+      border: 0;
+      border-top: 1px solid #eee;
+      margin: 15px 0;
+    }
+    /* 列表相片：嚴格控制 108:135 比例 (即 4:5) */
+    .card-img {
+      width: 100%;
+      aspect-ratio: 108 / 135; 
+      object-fit: cover; /* 確保圖片填滿不變形 */
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    
+    /* 管理員後台編輯標籤 */
+    .edit-badge {
+      display: none;
+      position: absolute;
+      top: 15px; right: 15px;
+      background: #c8963e;
+      color: white;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      z-index: 5;
+    }
+    body.admin-mode-active .edit-badge {
+      display: block;
+    }
+
+    /* 列表摘要文字截斷 (最多顯示 3 行) */
+    .card .content-text {
+      font-size: 15px;
+      color: #555;
+      text-align: justify;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ==========================================
+       4. 全頁詳細資料檢視區 (不保留頁首、左右雙欄排版)
+       ========================================== */
+    .detail-view-container {
+      display: none; /* 預設隱藏 */
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      touch-action: pan-y; /* 優化行動端瀏覽器垂直捲動與水平手勢相容性 */
+    }
+
+    /* 詳細頁左右雙欄配置 (桌機模式) */
+    .detail-layout {
+      display: flex;
+      gap: 40px;
+      margin-top: 20px;
+    }
+
+    /* 左側圖片區欄位：嚴格控制 108:135 寬高比 */
+    .detail-left-col {
+      flex: 0 0 380px; /* 固定左側圖片寬度 380px 不伸縮 */
+    }
+    .detail-main-img {
+      width: 100%;
+      aspect-ratio: 108 / 135; /* 108比135直式比例 */
+      object-fit: cover;
+      border-radius: 6px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    /* 右側文字與內容區欄位 */
+    .detail-right-col {
+      flex: 1; /* 自動填滿剩餘寬度 */
+      display: flex;
+      flex-direction: column;
+    }
+    .detail-right-col h2 {
+      font-size: 28px;
+      color: #4a3728;
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    .detail-right-col hr {
+      border: 0;
+      border-top: 1px solid #eee;
+      margin: 15px 0;
+      width: 100%;
+    }
+    .detail-right-col .content-text {
+      font-size: 16px;
+      color: #444;
+      text-align: justify;
+      line-height: 1.9;
+    }
+
+    /* 導覽橫列：控制「左返回、右翻頁」 */
+    .detail-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      width: 100%;
+    }
+    .view-close-btn {
+      background: #4a3728; color: white;
+      border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px;
+      transition: background 0.2s;
+    }
+    .view-close-btn:hover { background: #33251b; }
+    
+    .page-switch-group {
+      display: flex;
+      gap: 10px;
+    }
+    .nav-btn {
+      background: #4a3728; color: white;
+      border: none; font-size: 14px; padding: 0 15px; height: 38px;
+      cursor: pointer; border-radius: 4px; transition: background 0.2s;
+    }
+    .nav-btn:hover { background: #33251b; }
+
+    /* ==========================================
+       5. 響應式斷點設計 (RWD 手機模式優化)
+       ========================================== */
+    @media (max-width: 768px) {
+      /* 手機板詳細頁面改為單欄上下排列 */
+      .detail-layout {
+        flex-direction: column;
+        gap: 20px;
+      }
+      .detail-left-col {
+        flex: none;
+        width: 100%; /* 圖片寬度改為滿版 */
+        max-width: 340px;
+        margin: 0 auto; /* 置中顯示 */
+      }
+    }
+
+    /* ==========================================
+       6. 通用彈出視窗樣式 (通知、密碼、表單)
+       ========================================== */
+    /* 自訂訊息通知彈窗 */
+    .alert-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 20000;
+      justify-content: center;
+      align-items: center;
+    }
+    .alert-content {
+      background: white; padding: 25px; border-radius: 8px; width: 300px; text-align: center; font-size: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .alert-content p { margin: 0 0 20px 0; color: #333; font-weight: bold; line-height: 1.5; }
+
+    /* 管理員通用彈窗背景 */
+    .admin-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+    .admin-content {
+      background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px; font-size: 14px; max-height: 90vh; overflow-y: auto;
+    }
+    .admin-content h3 { margin-top: 0; font-size: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;
+    }
+    .radio-group { display: flex; gap: 15px; margin-bottom: 10px; }
+    .radio-group label { display: inline; font-weight: normal; cursor: pointer; }
+    .btn-group { text-align: right; margin-top: 20px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-submit { background: #2b3929; color: white; margin-left: 10px; }
+  </style>
+</head>
+<body>
+
+  <main class="main-container">
+    
+    <div class="header-area" id="mainHeaderArea">
+      <div class="banner">
+        <img src="images/reading_clubs.jpg" alt="讀書會活動橫幅" oncontextmenu="return false;" ondragstart="return false;">
+      </div>
+      <button class="logo-btn" onclick="openPasswordModal()" title="管理員密道">
+        <img src="images/logo-small2.png" alt="Slow Pace Studio Logo" oncontextmenu="return false;" ondragstart="return false;">
+      </button>
+    </div>
+
+    <div class="grid-container" id="clubs-container"></div>
+
+    <div class="detail-view-container" id="detailViewArea">
+      
+      <div class="detail-nav-bar">
+        <button class="view-close-btn" onclick="closeDetailPageView()">← 返回列表</button>
+        <div class="page-switch-group">
+          <button class="nav-btn" onclick="navigateClub(-1)">上一篇</button>
+          <button class="nav-btn" onclick="navigateClub(1)">下一篇</button>
+        </div>
+      </div>
+
+      <div class="detail-layout">
+        <div class="detail-left-col" id="detailLeftImgArea"></div>
+        <div class="detail-right-col" id="detailRightTextArea"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="alert-modal" id="customAlert">
+    <div class="alert-content">
+      <p id="alertMessage">提示訊息</p>
+      <button class="btn btn-submit" style="margin:0; width:100%;" onclick="closeCustomAlert()">確定</button>
+    </div>
+  </div>
+
+  <div class="admin-modal" id="passwordModal">
+    <div class="admin-content" style="max-width: 350px;">
+      <h3>管理員驗證</h3>
+      <div class="form-group">
+        <label for="adminPwd">請輸入通行密碼：</label>
+        <input type="password" id="adminPwd" placeholder="請輸入密碼">
+      </div>
+      <div class="btn-group">
+        <button type="button" class="btn" onclick="closePasswordModal()">取消</button>
+        <button type="button" class="btn btn-submit" onclick="verifyPassword()">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-modal" id="adminModal">
+    <div class="admin-content">
+      <h3 id="modalTitle">新增讀書會資料</h3>
+      <form id="clubForm" onsubmit="handleSubmit(event)">
+        <input type="hidden" id="editingId">
+        
+        <div class="form-group">
+          <label>單元名稱 (title)</label>
+          <input type="text" id="clubTitle" required placeholder="例如：象是笨蛋">
+        </div>
+        
+        <div class="form-group">
+          <label>顯示排序權重 (sort_order)</label>
+          <input type="number" id="clubSortOrder" required value="10" placeholder="數字越小越後面，1會落在最右下角">
+        </div>
+        
+        <div class="form-group">
+          <label>圖片來源</label>
+          <div class="radio-group">
+            <label><input type="radio" name="imgSource" value="upload" checked onclick="switchImgMethod('upload')"> 上傳新相片</label>
+            <label><input type="radio" name="imgSource" value="url" onclick="switchImgMethod('url')"> 手動輸入位置/GitHub路徑</label>
+          </div>
+          <div id="uploadInputSection">
+            <input type="file" id="clubImageFile" accept="image/*">
+          </div>
+          <div id="urlInputSection" style="display: none;">
+            <input type="text" id="clubImageUrlInput" placeholder="可填寫外部網址或 GitHub 的相片路徑，例如: images/book1.jpg">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>內容介紹 (content)</label>
+          <textarea id="clubContent" rows="8" required placeholder="請輸入介紹內文..."></textarea>
+        </div>
+        
+        <div class="btn-group">
+          <button type="button" class="btn" onclick="closeAdminModal()">取消</button>
+          <button type="submit" id="submitBtn" class="btn btn-submit">儲存資料</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 7. Supabase 資料庫基礎初始化配置
+    // ==========================================
+    window.supabaseUrl = 'https://blqlrxqckiuvgevmakbu.supabase.co';
+    window.supabaseKey = 'sb_publishable_qFXwpuGChVdRwjc9K7prVQ_PgYmlnpG';
+    window.TABLE_NAME = 'reading_clubs'; 
+    window.STORAGE_BUCKET_NAME = 'reading_clubs'; 
+    window.client = supabase.createClient(window.supabaseUrl, window.supabaseKey);
+
+    // 全域快取陣列與目前詳細頁面的索引指針
+    let globalClubsData = []; 
+    let currentActiveIndex = -1; 
+
+    // 手機手勢觸控座標快取
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    // 網頁載入完成後執行啟動
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchChapters();         // 從 Supabase 抓取資料
+      setupTouchListeners();   // 綁定手機滑動監聽事件
+    });
+
+    // 彈出式客製化訊息通知
+    function showAlert(msg) {
+      document.getElementById('alertMessage').innerText = msg;
+      document.getElementById('customAlert').style.display = 'flex';
+    }
+    function closeCustomAlert() {
+      document.getElementById('customAlert').style.display = 'none';
+    }
+
+    // ==========================================
+    // 8. 資料讀取與動態渲染 (關鍵：逆向排序控制)
+    // ==========================================
+    async function fetchChapters() {
+      // 為了讓 sort_order 權重為 1 的項目排在最右下角，我們必須採用降冪排列 (descending: true)
+      // 這樣數字最大的（例如 10）會被放在最前面（左上），數字越小越往後推，1 就會落在最後一格（右下）
+      const { data, error } = await window.client
+        .from(window.TABLE_NAME)
+        .select('*')
+        .order('sort_order', { ascending: false }); 
+
+      if (error) {
+        console.error("Supabase 載入失敗:", error);
+        return;
+      }
+
+      globalClubsData = data; // 將排序好的完整資料放入全域變數，供後續翻頁使用
+      const container = document.getElementById('clubs-container');
+      container.innerHTML = ''; 
+
+      // 產生主頁的卡片 HTML 結構
+      data.forEach((item, index) => {
+        const formattedContent = item.content ? item.content.replace(/\n/g, '<br>') : '';
+        const card = document.createElement('section');
+        card.className = 'card';
+        card.onclick = () => openDetailPageView(index); // 綁定點擊事件，開啟全頁詳細模式
+
+        card.innerHTML = `
+          <div class="edit-badge" onclick="setupEditForm(${index}, event)">編輯 ✎</div>
+          <h2>${item.title || '未命名'}</h2>
+          <hr>
+          <img class="card-img" src="${item.image_url || ''}" alt="${item.title}" oncontextmenu="return false;" ondragstart="return false;">
+          <div class="content-text">${formattedContent}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ==========================================
+    // 9. 詳細資料版面切換與內容注入 (左圖右文、隱藏頁首)
+    // ==========================================
+    function openDetailPageView(index) {
+      currentActiveIndex = index;
+      const item = globalClubsData[index];
+      if (!item) return;
+
+      // 處理內文字串換行
+      const formattedContent = item.content ? item.content.replace(/\n/g, '<br>') : '';
+      
+      // 分別渲染左側圖片與右側文字
+      const leftHtml = `<img class="detail-main-img" src="${item.image_url || ''}" alt="${item.title}" oncontextmenu="return false;" ondragstart="return false;">`;
+      const rightHtml = `
+        <h2>${item.title || '未命名'}</h2>
+        <hr>
+        <div class="content-text">${formattedContent}</div>
+      `;
+
+      document.getElementById('detailLeftImgArea').innerHTML = leftHtml;
+      document.getElementById('detailRightTextArea').innerHTML = rightHtml;
+      
+      // 隱藏機制：關閉頁首橫幅大圖、關閉卡片列表格線
+      document.getElementById('mainHeaderArea').style.display = 'none';
+      document.getElementById('clubs-container').style.display = 'none';
+      
+      // 顯示機制：開啟詳細資料版面
+      document.getElementById('detailViewArea').style.display = 'block';
+      
+      // 畫面自動平滑捲動至詳細資料起點
+      document.getElementById('detailViewArea').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 關閉詳細檢視，還原顯示頁首大圖與清單
+    function closeDetailPageView() {
+      document.getElementById('detailViewArea').style.display = 'none';
+      document.getElementById('mainHeaderArea').style.display = 'block'; // 還原頁首大圖
+      document.getElementById('clubs-container').style.display = 'grid'; // 還原卡片列表
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 左右按鈕切換章節（首尾循環保護）
+    function navigateClub(direction) {
+      let newIndex = currentActiveIndex + direction;
+      if (newIndex < 0) newIndex = globalClubsData.length - 1;
+      if (newIndex >= globalClubsData.length) newIndex = 0;
+      openDetailPageView(newIndex);
+    }
+
+    // ==========================================
+    // 10. 手機模式：左右滑動（Swipe）手勢監聽機制
+    // ==========================================
+    function setupTouchListeners() {
+      const area = document.getElementById('detailViewArea');
+      
+      // 記錄手指接觸螢幕的 X 軸座標
+      area.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+
+      // 記錄手指離開螢幕的 X 軸座標並計算滑動距離
+      area.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipeGesture();
+      }, { passive: true });
+    }
+
+    function handleSwipeGesture() {
+      const swipeThreshold = 60; // 定義滑動超過 60 像素才判定為有效操作
+      // 手指往左滑動 -> 看下一篇
+      if (touchStartX - touchEndX > swipeThreshold) {
+        navigateClub(1);
+      }
+      // 手指往右滑動 -> 看上一篇
+      if (touchEndX - touchStartX > swipeThreshold) {
+        navigateClub(-1);
+      }
+    }
+
+    // ==========================================
+    // 11. 後台管理與密碼通行證驗證控制
+    // ==========================================
+    function openPasswordModal() {
+      document.getElementById('passwordModal').style.display = 'flex';
+      document.getElementById('adminPwd').focus();
+    }
+    function closePasswordModal() {
+      document.getElementById('passwordModal').style.display = 'none';
+      document.getElementById('adminPwd').value = '';
+    }
+    function verifyPassword() {
+      const pwd = document.getElementById('adminPwd').value;
+      if (pwd === "123456") {
+        closePasswordModal();
+        document.body.classList.add('admin-mode-active'); // 開啟前端卡片上的編輯按鈕
+        document.getElementById('modalTitle').innerText = "新增讀書會資料";
+        document.getElementById('adminModal').style.display = 'flex';
+      } else {
+        showAlert("密碼錯誤！");
+      }
+    }
+
+    // 點擊編輯按鈕：代入舊資料至表單中
+    function setupEditForm(index, event) {
+      event.stopPropagation(); // 阻止事件冒泡，不觸發開詳細頁
+      const item = globalClubsData[index];
+      document.getElementById('modalTitle').innerText = "修改讀書會資料";
+      document.getElementById('editingId').value = item.id;
+      document.getElementById('clubTitle').value = item.title || '';
+      document.getElementById('clubSortOrder').value = item.sort_order || 10;
+      document.getElementById('clubContent').value = item.content || '';
+      
+      switchImgMethod('url');
+      document.querySelectorAll('input[name="imgSource"]')[1].checked = true;
+      document.getElementById('clubImageUrlInput').value = item.image_url || '';
+      document.getElementById('adminModal').style.display = 'flex';
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').style.display = 'none';
+      document.getElementById('clubForm').reset();
+      document.getElementById('editingId').value = '';
+      switchImgMethod('upload'); 
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('submitBtn').innerText = '儲存資料';
+    }
+
+    // 切換上傳新檔案或是填寫手動/GitHub路徑
+    function switchImgMethod(method) {
+      if (method === 'upload') {
+        document.getElementById('uploadInputSection').style.display = 'block';
+        document.getElementById('urlInputSection').style.display = 'none';
+        document.getElementById('clubImageFile').required = true;
+        document.getElementById('clubImageUrlInput').required = false;
+      } else {
+        document.getElementById('uploadInputSection').style.display = 'none';
+        document.getElementById('urlInputSection').style.display = 'block';
+        document.getElementById('clubImageFile').required = false;
+        document.getElementById('clubImageUrlInput').required = true;
+      }
+    }
+
+    // Canvas 圖片前端自動等比例壓縮
+    function compressImage(file, maxWidth = 1200, quality = 0.8) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            let width = img.width, height = img.height;
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => resolve(blob), file.type, quality);
+          };
+        };
+      });
+    }
+
+    // ==========================================
+    // 12. 表單儲存提交（包含新增與修改整合判定）
+    // ==========================================
+    async function handleSubmit(event) {
+      event.preventDefault();
+      const submitBtn = document.getElementById('submitBtn');
+      const editingId = document.getElementById('editingId').value;
+      const title = document.getElementById('clubTitle').value;
+      const sortOrder = parseInt(document.getElementById('clubSortOrder').value, 10);
+      const content = document.getElementById('clubContent').value;
+      const imgSource = document.querySelector('input[name="imgSource"]:checked').value;
+      
+      submitBtn.disabled = true;
+      submitBtn.innerText = '正在處理中...';
+      let imageUrl = '';
+
+      if (imgSource === 'upload') {
+        // 模式一：上傳全新圖片至 Supabase Storage
+        const fileInput = document.getElementById('clubImageFile');
+        if (fileInput.files.length === 0) {
+          showAlert("請選取要上傳的相片");
+          submitBtn.disabled = false;
+          return;
+        }
+        const originalFile = fileInput.files[0];
+        let uploadPayload = originalFile;
+
+        if (originalFile.type.startsWith('image/')) {
+          try { uploadPayload = await compressImage(originalFile, 1200, 0.85); } catch (e) {}
+        }
+
+        const fileExt = originalFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`;
+        const { error: storageError } = await window.client.storage.from(window.STORAGE_BUCKET_NAME).upload(fileName, uploadPayload, { contentType: originalFile.type });
+
+        if (storageError) {
+          showAlert("圖片上傳失敗: " + storageError.message);
+          submitBtn.disabled = false;
+          return;
+        }
+        const { data: urlData } = window.client.storage.from(window.STORAGE_BUCKET_NAME).getPublicUrl(fileName);
+        imageUrl = urlData.publicUrl;
+      } else {
+        // 模式二：直接採信手動輸入的路徑（支援 GitHub 相對路徑如 images/photo.jpg）
+        imageUrl = document.getElementById('clubImageUrlInput').value.trim();
+      }
+
+      // 資料打包
+      const payload = { title: title, image_url: imageUrl, content: content, sort_order: sortOrder };
+      let resultError = null;
+
+      if (editingId) {
+        // 修改舊案指令
+        const { error } = await window.client.from(window.TABLE_NAME).update(payload).eq('id', editingId);
+        resultError = error;
+      } else {
+        // 新增全新案指令
+        const { error } = await window.client.from(window.TABLE_NAME).insert([payload]);
+        resultError = error;
+      }
+
+      if (resultError) {
+        showAlert("資料儲存失敗: " + resultError.message);
+        submitBtn.disabled = false;
+      } else {
+        showAlert(editingId ? "修改成功！資料已完成同步。" : "新增成功！資料已同步更新。");
+        closeAdminModal();
+        
+        // 若是在詳細檢視頁面中直接進行修改，儲存後同步更新當下的單頁顯示內文
+        if(document.getElementById('detailViewArea').style.display === 'block') {
+          await fetchChapters();
+          openDetailPageView(currentActiveIndex);
+        } else {
+          fetchChapters();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
