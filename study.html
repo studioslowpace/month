@@ -21,8 +21,8 @@
             margin: 0;
             padding: 0;
             font-family: 'PingFang HK', 'Heiti TC', 'Microsoft JhengHei', serif;
-            background-color: #ffffff; /* 網頁整體大背景顏色（全白） */
-            color: #404040;            /* 全網頁預設文字顏色（深灰） */
+            background-color: #ffffff; 
+            color: #404040;            
             line-height: 1.8;
             -webkit-font-smoothing: antialiased;
         }
@@ -49,7 +49,7 @@
         }
 
         /* ==========================================================================
-           【2. 主視覺橫幅區 (Hero Section)】
+           【2. 主視覺橫幅區 (Hero Section) 原版外觀】
            ========================================================================== */
         .hero-section {
             position: relative;
@@ -63,7 +63,7 @@
             color: #ffffff;
             text-align: center;
             max-width: 1500px;
-            margin: 0 auto;
+            margin: 20px auto 0;
             border-radius: 34px; 
             overflow: hidden;
         }
@@ -85,11 +85,58 @@
             position: absolute; bottom: 20px; right: 25px; z-index: 10;
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
-        .hero-logo-btn:hover { transform: scale(1.05); opacity: 0.9; }
-        .hero-logo-btn img { width: 75px; height: 75px; object-fit: contain; border-radius: 50%; }
+        .hero-logo-btn:hover { transform: scale(1.05); }
+        
+        .hero-logo-btn img { 
+            width: 75px; 
+            height: 75px; 
+            object-fit: contain; 
+            border-radius: 50%; 
+            transition: all 0.3s ease;
+            opacity: 0.4; 
+        }
 
         .hero-content h1 { font-size: 38px; margin: 0 0 15px 0; letter-spacing: 3px; font-weight: normal; }
         .hero-content p { font-size: 15px; color: #fff5f0; margin: 0; text-align: left; }
+
+        /* ─── 登入狀態控制：讓所有登入按鈕（包含 Header 與 Hero 內）同步發光 ─── */
+        .admin-icon-btn, .hero-logo-btn {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .admin-icon-btn.logged-in img, .hero-logo-btn.logged-in img {
+            opacity: 1 !important;
+            filter: drop-shadow(0 0 8px rgba(20, 101, 163, 0.7)) !important;
+        }
+
+        /* ─── ➕ 獨立的「新增展覽」專用按鈕樣式 ─── */
+        .study-global-add-wrap {
+            display: none; /* 🔒 預設隱藏：只有管理員登入後才會顯示 */
+            justify-content: flex-start;
+            margin: 30px auto 10px;
+            width: 100%;
+            max-width: 1500px;
+        }
+        .btn-global-add {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #2b73ff;
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(43, 115, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .btn-global-add:hover {
+            background-color: #1456db;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(43, 115, 255, 0.3);
+        }
 
         /* ==========================================================================
            【3. 智慧歸類渲染區：篇章與內容樣式 (Chapter & Modular Layout)】
@@ -121,7 +168,7 @@
             margin: 40px 0;
         }
 
-        /* ─── 展覽資料區塊 (Exhibition Block) ─── */
+        /* 展覽資料區塊 */
         .exhibition-block {
             display: flex; gap: 50px; margin-bottom: 30px; align-items: flex-start;
         }
@@ -140,11 +187,11 @@
         .btn:hover { background-color: #1a1a1a; }
         .btn .arrow { margin-left: 10px; }
 
-        /* ─── 活動資料區塊 (Tour Block) ─── */
+        /* 活動資料區塊 */
         .tour-block { margin-top: 45px; margin-bottom: 15px; }
         .tour-block h4 { font-size: 18px; margin-bottom: 20px; text-align: center; font-weight: normal; color: #444; letter-spacing: 1px; }
 
-        /* ─── 後台權限解鎖按鈕 (Action Buttons) ─── */
+        /* 後台內嵌修改/刪除按鈕 */
         .action-btns { display: none; gap: 10px; }
         .btn-edit, .btn-delete {
             background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(0, 0, 0, 0.15);
@@ -159,12 +206,11 @@
         .carousel-container {
             position: relative; max-width: 860px; margin: 0 auto; overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08); border-radius: 8px;
-            background-color: #1a1a1a; /* 💡 新增：照片未填滿區塊改為深色優雅背板 */
+            background-color: #1a1a1a; 
         }
         .carousel-wrapper { display: flex; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); width: 100%; }
         .carousel-slide { min-width: 100%; position: relative; }
         
-        /* 💡 重點改動 1：改為 contain，確保照片全看見、完全不被裁剪 */
         .carousel-slide img { 
             width: 100%; 
             height: 520px; 
@@ -216,13 +262,12 @@
         .file-label-btn:hover { background-color: #dddddd; }
         .upload-status-text { font-size: 12px; color: #2b73ff; display: flex; align-items: center; font-weight: 500; }
 
-        .form-hint { font-size: 12px; color: #999; margin-top: 4px; line-height: 1.5; }
         .form-submit-btn { width: 100%; padding: 14px; background-color: #404040; color: #fff; border: none; border-radius: 4px; font-size: 15px; cursor: pointer; }
         .form-submit-btn:hover { background-color: #1a1a1a; }
 
         @media (max-width: 768px) {
             .hero-section { height: 240px; border-radius: 16px; }
-            .hero-content h1 { font-size: 16px; } .hero-content p { font-size: 10px; }
+            .hero-content h1 { font-size: 22px; } .hero-content p { font-size: 12px; }
             .chapter-section { padding: 20px 10px; }
             .chapter-header-wrap { flex-direction: column; padding: 15px; align-items: flex-start; gap: 10px; }
             .exhibition-block { flex-direction: column; gap: 20px; }
@@ -234,6 +279,8 @@
 </head>
 <body>
 
+    <div id="header-placeholder"></div>
+
     <section class="hero-section">
         <button class="hero-logo-btn" id="secretAdminLogo" title="管理員登入">
             <img src="images/logo-small2.png" alt="Logo" oncontextmenu="return false;" ondragstart="return false;">
@@ -243,6 +290,12 @@
             <p>以空間共學這個模式作為試驗，嘗試連結來自不同空間的人<br>讓大家可以到這裏一起分享、學習。</p>
         </div>
     </section>
+
+    <div class="study-global-add-wrap" id="studyGlobalAddBlock">
+        <button class="btn-global-add" onclick="window.openCreateModal()">
+            <span>➕ 新增展覽與活動項目</span>
+        </button>
+    </div>
 
     <main class="container" id="dynamicContainer">
         <div class="loading-status">正在載入篇章資料...</div>
@@ -324,45 +377,146 @@
     </div>
 
     <script>
-        // 初始化 Supabase
+        // 初始化 Supabase 雲端環境
         window.supabaseUrl = 'https://blqlrxqckiuvgevmakbu.supabase.co';
         window.supabaseKey = 'sb_publishable_qFXwpuGChVdRwjc9K7prVQ_PgYmlnpG';
         window.TABLE_NAME = 'chapters'; 
         window.STORAGE_BUCKET_NAME = 'images'; 
         window.client = supabase.createClient(window.supabaseUrl, window.supabaseKey);
 
-        window.ADMIN_PASSWORD = '123456'; 
-        window.isAdminMode = false;        
+        window.study_isAdminMode = false;        
 
-        // 💡 重點改動 2：整合自動壓縮功能的上傳引擎
+        // 🔄 1. 核心權限 UI 狀態同步（同步控制 Header 按鈕、Hero 按鈕、與全站新增修刪鍵）
+        async function syncAdminUI() {
+            if (!window.client || !window.client.auth) return;
+            
+            const { data: { session } } = await window.client.auth.getSession();
+            const headerAuthBtn = document.getElementById('auth-btn');      // Header 的登入鈕
+            const secretAdminLogo = document.getElementById('secretAdminLogo'); // Hero 裡的 Logo
+            const globalAddBlock = document.getElementById('studyGlobalAddBlock');
+
+            if (session) {
+                window.study_isAdminMode = true;
+                
+                // 讓 Header 按鈕與 Hero 按鈕同步發光
+                if (headerAuthBtn) {
+                    headerAuthBtn.classList.add('logged-in');
+                    headerAuthBtn.title = "管理員已安全登入 (點擊可登出)";
+                }
+                if (secretAdminLogo) {
+                    secretAdminLogo.classList.add('logged-in');
+                    secretAdminLogo.title = "管理員已安全登入 (點擊可登出)";
+                }
+                
+                // 🟢 顯現獨立的「新增展覽」發布按鈕
+                if (globalAddBlock) globalAddBlock.style.display = 'flex';
+                // 顯示列表中所有的修改/刪除小按鈕
+                document.querySelectorAll('.action-btns').forEach(b => b.style.display = 'flex');
+            } else {
+                window.study_isAdminMode = false;
+                
+                if (headerAuthBtn) {
+                    headerAuthBtn.classList.remove('logged-in');
+                    headerAuthBtn.title = "管理員驗證登入";
+                }
+                if (secretAdminLogo) {
+                    secretAdminLogo.classList.remove('logged-in');
+                    secretAdminLogo.title = "管理員驗證登入";
+                }
+                
+                // 🔒 隱藏新增與修改小按鈕
+                if (globalAddBlock) globalAddBlock.style.display = 'none';
+                document.querySelectorAll('.action-btns').forEach(b => b.style.display = 'none');
+            }
+        }
+
+        // 🌐 2. 🔐 登入功能分工：只做「登入」與「安全登出」驗證切換
+        async function handleHeaderAuthAction() {
+            if (!window.client || typeof window.client.auth === 'undefined') return;
+            
+            const { data: { session } } = await window.client.auth.getSession();
+            
+            if (session) {
+                if (confirm('您目前已是管理員身份。\n是否要確定登出管理員模式？')) {
+                    try {
+                        await window.client.auth.signOut();
+                    } catch (err) {
+                        console.error("Supabase 登出失敗", err);
+                    }
+                    for (let i = localStorage.length - 1; i >= 0; i--) {
+                        const key = localStorage.key(i);
+                        if (key && key.includes('supabase.auth.token')) {
+                            localStorage.removeItem(key);
+                        }
+                    }
+                    window.study_isAdminMode = false;
+                    alert('已安全登出管理員模式');
+                    window.location.reload(true);
+                }
+            } else {
+                const adminId = prompt("請輸入管理員 ID (例如: admin):");
+                const password = prompt("請輸入密碼:");
+                if (adminId && password) {
+                    const formattedEmail = `${adminId.trim()}@studio.local`;
+                    const { error } = await window.client.auth.signInWithPassword({ 
+                        email: formattedEmail, 
+                        password: password 
+                    });
+                    if (error) {
+                        alert("❌ 驗證失敗：" + error.message);
+                    } else {
+                        alert("🟢 管理員驗證成功！");
+                        window.location.reload(true);
+                    }
+                }
+            }
+        }
+
+        // 📦 3. 非同步載入外部 header.html
+        async function loadExternalHeader() {
+            try {
+                const response = await fetch('header.html');
+                if (!response.ok) throw new Error('無法尋找到外部 header.html 檔案');
+                
+                const htmlText = await response.text();
+                document.getElementById('header-placeholder').innerHTML = htmlText;
+                
+                // A. 幫外部 header.html 的 auth-btn 綁定點擊事件
+                const headerAuthBtn = document.getElementById('auth-btn');
+                if (headerAuthBtn) {
+                    headerAuthBtn.addEventListener('click', handleHeaderAuthAction);
+                }
+                
+                // B. 幫主視覺裡的 secretAdminLogo 綁定完全一樣的點擊事件
+                const secretAdminLogo = document.getElementById('secretAdminLogo');
+                if (secretAdminLogo) {
+                    secretAdminLogo.addEventListener('click', handleHeaderAuthAction);
+                }
+                
+                await syncAdminUI();
+            } catch (err) {
+                console.error('載入外部 Header 失敗:', err);
+            }
+        }
+
+        // 💡 圖片自動壓縮上傳組件
         async function uploadAndCompressFile(file, statusEl) {
             try {
                 statusEl.textContent = '正在本地壓縮檔案中...';
-                
-                // 壓縮參數設定：最大 1MB，寬度最高 1200px
-                const options = {
-                    maxSizeMB: 1,
-                    maxWidthOrHeight: 1200,
-                    useWebWorker: true
-                };
-                
-                // 執行壓縮
+                const options = { maxSizeMB: 1, maxWidthOrHeight: 1200, useWebWorker: true };
                 const compressedFile = await imageCompression(file, options);
                 
                 statusEl.textContent = '壓縮完成，正在上傳至雲端...';
-                
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
                 const filePath = `uploads/${fileName}`;
 
-                // 上傳至 Supabase Storage
                 const { data, error } = await window.client.storage
                     .from(window.STORAGE_BUCKET_NAME)
                     .upload(filePath, compressedFile);
 
                 if (error) throw error;
 
-                // 取得公開下載網址
                 const { data: urlData } = window.client.storage
                     .from(window.STORAGE_BUCKET_NAME)
                     .getPublicUrl(filePath);
@@ -371,31 +525,24 @@
                 return urlData.publicUrl;
             } catch (err) {
                 statusEl.textContent = '❌ 錯誤：' + err.message;
-                console.error(err);
                 return null;
             }
         }
 
-        // 單張海報上傳
         document.getElementById('exImageFile').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             const statusEl = document.getElementById('exUploadStatus');
             const publicUrl = await uploadAndCompressFile(file, statusEl);
-            if (publicUrl) {
-                document.getElementById('exImage').value = publicUrl;
-            }
+            if (publicUrl) document.getElementById('exImage').value = publicUrl;
         });
 
-        // 批次相片上傳
         document.getElementById('tourImageFiles').addEventListener('change', async (e) => {
             const files = e.target.files;
             if (files.length === 0) return;
             const statusEl = document.getElementById('tourUploadStatus');
             const textarea = document.getElementById('tourImages');
-            
             let currentText = textarea.value.trim();
-            statusEl.textContent = `佇列中：準備處理 ${files.length} 張照片...`;
 
             for (let i = 0; i < files.length; i++) {
                 statusEl.textContent = `⏳ 正在處理第 (${i + 1}/${files.length}) 張照片...`;
@@ -409,8 +556,7 @@
             statusEl.textContent = `✅ 全數壓縮並上傳成功！`;
         });
 
-
-        // ─── 資料庫捞取與畫面渲染 ───
+        // ─── 資料捞取與動態 HTML 渲染 ───
         window.fetchAndRenderChapters = async function() {
             const containerEl = document.getElementById('dynamicContainer');
 
@@ -422,7 +568,8 @@
 
                 if (error) throw error;
                 if (!records || records.length === 0) {
-                    containerEl.innerHTML = '<div class="loading-status">目前尚無資料，請解鎖管理員新增。</div>';
+                    containerEl.innerHTML = '<div class="loading-status">目前尚無資料，請使用上方新增按鈕發布。</div>';
+                    await syncAdminUI();
                     return;
                 }
 
@@ -453,9 +600,7 @@
                     `;
 
                     group.items.forEach((item, index) => {
-                        if (index > 0) {
-                            htmlContent += `<hr class="inner-item-divider">`;
-                        }
+                        if (index > 0) htmlContent += `<hr class="inner-item-divider">`;
 
                         const slides = item.carousel_slides || [];
                         slides.sort((a, b) => a.sort_order - b.sort_order);
@@ -468,7 +613,7 @@
                                 <div class="exhibition-text">
                                     <h3 style="display:flex; justify-content:space-between; align-items:center;">
                                         <span>${item.ex_title}</span>
-                                        <div class="action-btns" id="btns-${item.id}" style="display: ${window.isAdminMode ? 'flex' : 'none'};">
+                                        <div class="action-btns" id="btns-${item.id}">
                                             <button class="btn-edit" onclick="window.openEditModal(${item.id})">修改</button>
                                             <button class="btn-delete" onclick="window.deleteChapter(${item.id})">刪除</button>
                                         </div>
@@ -513,13 +658,15 @@
                     });
                 });
 
+                await syncAdminUI();
+
             } catch (err) {
                 console.error(err);
                 containerEl.innerHTML = '<div class="loading-status" style="color:red;">載入發生錯誤。</div>';
             }
         };
 
-        // 輪播動畫計算核心
+        // 輪播動畫引擎
         window.initCarousel = function(container) {
             const wrapper = container.querySelector('.carousel-wrapper');
             const counter = container.querySelector('.carousel-counter');
@@ -538,21 +685,7 @@
             update();
         };
 
-        // 後台窗體與開關控制
-        const modal = document.getElementById('adminModal');
-        const form = document.getElementById('chapterForm');
-        const submitBtn = document.getElementById('submitBtn');
-
-        document.getElementById('secretAdminLogo').onclick = () => {
-            if (window.isAdminMode) { window.openCreateModal(); return; }
-            const pwd = prompt('請輸入管理員密碼：');
-            if (pwd === window.ADMIN_PASSWORD) {
-                window.isAdminMode = true;
-                alert('🔓 驗證成功！已開啟修改按鈕。');
-                document.querySelectorAll('.action-btns').forEach(b => b.style.display = 'flex');
-            }
-        };
-
+        // 開啟新增彈出視窗
         window.openCreateModal = function() {
             document.getElementById('modalFormTitle').textContent = '新增展覽/活動項目';
             document.getElementById('editChapterId').value = '';
@@ -562,6 +695,7 @@
             modal.style.display = 'flex';
         };
 
+        // 開啟修改彈出視窗
         window.openEditModal = function(id) {
             const item = window.loadedChaptersCache.find(c => c.id === id);
             if (!item) return;
@@ -593,18 +727,18 @@
             window.fetchAndRenderChapters();
         };
 
+        const modal = document.getElementById('adminModal');
+        const form = document.getElementById('chapterForm');
+        const submitBtn = document.getElementById('submitBtn');
         document.getElementById('closeAdminBtn').onclick = () => modal.style.display = 'none';
 
-        // 提交表單資料
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             submitBtn.disabled = true;
 
             const editId = document.getElementById('editChapterId').value;
-            const chapterTitleStr = document.getElementById('chapterTitle').value.trim();
-            
             const payload = {
-                title: chapterTitleStr,
+                title: document.getElementById('chapterTitle').value.trim(),
                 bg_color: document.getElementById('chapterBgColor').value,
                 ex_title: document.getElementById('exTitle').value.trim(),
                 ex_image: document.getElementById('exImage').value.trim(),
@@ -661,7 +795,11 @@
             }
         });
 
-        window.addEventListener('DOMContentLoaded', window.fetchAndRenderChapters);
+        // ⚙️ 初始化程序
+        window.addEventListener('DOMContentLoaded', () => {
+            loadExternalHeader();       
+            window.fetchAndRenderChapters(); 
+        });
     </script>
 </body>
 </html>

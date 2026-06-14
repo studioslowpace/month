@@ -299,6 +299,8 @@
 </head>
 <body>
 
+  <div id="header-container"></div>    
+
   <main class="main-container">
     
     <div class="header-area" id="mainHeaderArea">
@@ -309,6 +311,12 @@
         <img src="images/logo-small2.png" alt="Slow Pace Studio Logo" oncontextmenu="return false;" ondragstart="return false;">
       </button>
     </div>
+
+    <div class="club-global-add-wrap" id="clubGlobalAddBlock">
+    <button class="btn-global-add" onclick="window.openCreateModal()">
+        <span>➕ 新增讀書會項目</span>
+    </button>
+</div>
 
     <div class="grid-container" id="clubs-container"></div>
 
@@ -394,7 +402,9 @@
     </div>
   </div>
 
-  <script>
+      <footer id="global-footer" class="custom-footer"></footer>
+
+<script>
     // ==========================================
     // 7. Supabase 資料庫基礎初始化配置
     // ==========================================
@@ -407,6 +417,7 @@
     // 全域快取陣列與目前詳細頁面的索引指針
     let globalClubsData = []; 
     let currentActiveIndex = -1; 
+    window.club_isAdminMode = false; // 管理員登入狀態鎖
 
     // 手機手勢觸控座標快取
     let touchStartX = 0;
@@ -414,17 +425,122 @@
 
     // 網頁載入完成後執行啟動
     document.addEventListener("DOMContentLoaded", () => {
+      loadExternalHeader();    // 📦 優先動態載入外部頁首並綁定登入功能
       fetchChapters();         // 從 Supabase 抓取資料
       setupTouchListeners();   // 綁定手機滑動監聽事件
     });
 
     // 彈出式客製化訊息通知
     function showAlert(msg) {
-      document.getElementById('alertMessage').innerText = msg;
-      document.getElementById('customAlert').style.display = 'flex';
+      // 優先檢查頁面上有沒有自訂 alert，沒有的話退回原生 alert
+      const alertEl = document.getElementById('customAlert');
+      if (alertEl) {
+        document.getElementById('alertMessage').innerText = msg;
+        alertEl.style.display = 'flex';
+      } else {
+        alert(msg);
+      }
     }
     function closeCustomAlert() {
-      document.getElementById('customAlert').style.display = 'none';
+      const alertEl = document.getElementById('customAlert');
+      if (alertEl) alertEl.style.display = 'none';
+    }
+
+    // ==========================================
+    // 🌐 增強：動態引入外部 Header 與智慧權限同步
+    // ==========================================
+    async function loadExternalHeader() {
+      try {
+        const placeholder = document.getElementById('header-placeholder');
+        if (!placeholder) return; // 確保頁面上有預留盛裝 header 的容器
+
+        const response = await fetch('header.html');
+        if (!response.ok) throw new Error('無法尋找到外部 header.html 檔案');
+        
+        const htmlText = await response.text();
+        placeholder.innerHTML = htmlText;
+        
+        // 抓取 header 內原創的 auth-btn 節點並綁定安全驗證監聽器
+        const authBtn = document.getElementById('auth-btn');
+        if (authBtn) {
+          authBtn.addEventListener('click', handleHeaderAuthAction);
+        }
+        
+        await syncAdminUI();
+      } catch (err) {
+        console.error('載入外部 Header 失敗:', err);
+      }
+    }
+
+    // 同步全站管理員權限 UI 狀態
+    async function syncAdminUI() {
+      if (!window.client || !window.client.auth) return;
+      
+      const { data: { session } } = await window.client.auth.getSession();
+      const authBtn = document.getElementById('auth-btn');
+
+      if (session) {
+        window.club_isAdminMode = true;
+        document.body.classList.add('admin-mode-active'); // 開啟讀書會卡片上的編輯筆圖標
+        
+        if (authBtn) {
+          authBtn.classList.add('logged-in'); 
+          authBtn.title = "管理員已安全登入 (點擊可登出)";
+        }
+      } else {
+        window.club_isAdminMode = false;
+        document.body.classList.remove('admin-mode-active'); // 隱藏編輯圖標
+        
+        if (authBtn) {
+          authBtn.classList.remove('logged-in'); 
+          authBtn.title = "管理員驗證登入";
+        }
+      }
+    }
+
+    // Header 登入按鈕專職行為：安全登入與登出驗證切換
+    async function handleHeaderAuthAction() {
+      if (!window.client || typeof window.client.auth === 'undefined') return;
+      
+      const { data: { session } } = await window.client.auth.getSession();
+      
+      if (session) {
+        // 狀態 A：已登入 -> 執行安全登出
+        if (confirm('您目前已是管理員身份。\n是否要確定登出管理員模式？')) {
+          try {
+            await window.client.auth.signOut();
+          } catch (err) {
+            console.error("Supabase 登出失敗", err);
+          }
+          // 清理潛留的 Token 殘留
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key && key.includes('supabase.auth.token')) {
+              localStorage.removeItem(key);
+            }
+          }
+          window.club_isAdminMode = false;
+          alert('已安全登出管理員模式');
+          window.location.reload(true);
+        }
+      } else {
+        // 狀態 B：未登入 -> 彈出視窗請求 Supabase 帳密驗證
+        const adminId = prompt("請輸入管理員 ID (例如: admin):");
+        const password = prompt("請輸入密碼:");
+        if (adminId && password) {
+          const formattedEmail = `${adminId.trim()}@studio.local`;
+          const { error } = await window.client.auth.signInWithPassword({ 
+            email: formattedEmail, 
+            password: password 
+          });
+          if (error) {
+            showAlert("❌ 驗證失敗：" + error.message);
+          } else {
+            showAlert("🟢 管理員驗證成功！");
+            window.location.reload(true);
+          }
+        }
+      }
     }
 
     // ==========================================
@@ -432,7 +548,6 @@
     // ==========================================
     async function fetchChapters() {
       // 為了讓 sort_order 權重為 1 的項目排在最右下角，我們必須採用降冪排列 (descending: true)
-      // 這樣數字最大的（例如 10）會被放在最前面（左上），數字越小越往後推，1 就會落在最後一格（右下）
       const { data, error } = await window.client
         .from(window.TABLE_NAME)
         .select('*')
@@ -445,6 +560,7 @@
 
       globalClubsData = data; // 將排序好的完整資料放入全域變數，供後續翻頁使用
       const container = document.getElementById('clubs-container');
+      if (!container) return;
       container.innerHTML = ''; 
 
       // 產生主頁的卡片 HTML 結構
@@ -463,6 +579,9 @@
         `;
         container.appendChild(card);
       });
+
+      // 渲染完卡片後，重新同步一次 UI 編輯按鈕的顯現狀態
+      await syncAdminUI();
     }
 
     // ==========================================
@@ -488,7 +607,7 @@
       document.getElementById('detailRightTextArea').innerHTML = rightHtml;
       
       // 隱藏機制：關閉頁首橫幅大圖、關閉卡片列表格線
-      document.getElementById('mainHeaderArea').style.display = 'none';
+      if (document.getElementById('mainHeaderArea')) document.getElementById('mainHeaderArea').style.display = 'none';
       document.getElementById('clubs-container').style.display = 'none';
       
       // 顯示機制：開啟詳細資料版面
@@ -501,7 +620,7 @@
     // 關閉詳細檢視，還原顯示頁首大圖與清單
     function closeDetailPageView() {
       document.getElementById('detailViewArea').style.display = 'none';
-      document.getElementById('mainHeaderArea').style.display = 'block'; // 還原頁首大圖
+      if (document.getElementById('mainHeaderArea')) document.getElementById('mainHeaderArea').style.display = 'block'; // 還原頁首大圖
       document.getElementById('clubs-container').style.display = 'grid'; // 還原卡片列表
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -519,6 +638,7 @@
     // ==========================================
     function setupTouchListeners() {
       const area = document.getElementById('detailViewArea');
+      if (!area) return;
       
       // 記錄手指接觸螢幕的 X 軸座標
       area.addEventListener('touchstart', (e) => {
@@ -545,31 +665,19 @@
     }
 
     // ==========================================
-    // 11. 後台管理與密碼通行證驗證控制
+    // 11. 後台管理資料代入控制（已移除原先的本地舊密碼密碼框，改由 Header 集中接管）
     // ==========================================
-    function openPasswordModal() {
-      document.getElementById('passwordModal').style.display = 'flex';
-      document.getElementById('adminPwd').focus();
-    }
-    function closePasswordModal() {
-      document.getElementById('passwordModal').style.display = 'none';
-      document.getElementById('adminPwd').value = '';
-    }
-    function verifyPassword() {
-      const pwd = document.getElementById('adminPwd').value;
-      if (pwd === "123456") {
-        closePasswordModal();
-        document.body.classList.add('admin-mode-active'); // 開啟前端卡片上的編輯按鈕
-        document.getElementById('modalTitle').innerText = "新增讀書會資料";
-        document.getElementById('adminModal').style.display = 'flex';
-      } else {
-        showAlert("密碼錯誤！");
-      }
-    }
-
+    
     // 點擊編輯按鈕：代入舊資料至表單中
     function setupEditForm(index, event) {
       event.stopPropagation(); // 阻止事件冒泡，不觸發開詳細頁
+      
+      // 雙重安全檢查：確保登入狀態才開啟
+      if (!window.club_isAdminMode) {
+        showAlert("請先使用頁首的管理員按鈕進行登入。");
+        return;
+      }
+
       const item = globalClubsData[index];
       document.getElementById('modalTitle').innerText = "修改讀書會資料";
       document.getElementById('editingId').value = item.id;
@@ -582,6 +690,19 @@
       document.getElementById('clubImageUrlInput').value = item.image_url || '';
       document.getElementById('adminModal').style.display = 'flex';
     }
+
+    // 提供給主網頁「新增按鈕」直接呼叫的方法
+    window.openCreateModal = function() {
+      if (!window.club_isAdminMode) {
+        showAlert("請先使用頁首的管理員按鈕進行登入。");
+        return;
+      }
+      document.getElementById('modalTitle').innerText = "新增讀書會資料";
+      document.getElementById('editingId').value = '';
+      document.getElementById('clubForm').reset();
+      switchImgMethod('upload');
+      document.getElementById('adminModal').style.display = 'flex';
+    };
 
     function closeAdminModal() {
       document.getElementById('adminModal').style.display = 'none';
@@ -648,7 +769,6 @@
       let imageUrl = '';
 
       if (imgSource === 'upload') {
-        // 模式一：上傳全新圖片至 Supabase Storage
         const fileInput = document.getElementById('clubImageFile');
         if (fileInput.files.length === 0) {
           showAlert("請選取要上傳的相片");
@@ -674,7 +794,6 @@
         const { data: urlData } = window.client.storage.from(window.STORAGE_BUCKET_NAME).getPublicUrl(fileName);
         imageUrl = urlData.publicUrl;
       } else {
-        // 模式二：直接採信手動輸入的路徑（支援 GitHub 相對路徑如 images/photo.jpg）
         imageUrl = document.getElementById('clubImageUrlInput').value.trim();
       }
 
@@ -683,11 +802,9 @@
       let resultError = null;
 
       if (editingId) {
-        // 修改舊案指令
         const { error } = await window.client.from(window.TABLE_NAME).update(payload).eq('id', editingId);
         resultError = error;
       } else {
-        // 新增全新案指令
         const { error } = await window.client.from(window.TABLE_NAME).insert([payload]);
         resultError = error;
       }
@@ -699,7 +816,6 @@
         showAlert(editingId ? "修改成功！資料已完成同步。" : "新增成功！資料已同步更新。");
         closeAdminModal();
         
-        // 若是在詳細檢視頁面中直接進行修改，儲存後同步更新當下的單頁顯示內文
         if(document.getElementById('detailViewArea').style.display === 'block') {
           await fetchChapters();
           openDetailPageView(currentActiveIndex);
@@ -708,6 +824,125 @@
         }
       }
     }
+
+    // ==========================================
+// 載入頁首並處理年份（維持原樣）
+// ==========================================  
+fetch('header.html')
+    .then(response => response.text())
+    .then(data => {
+        const container = document.getElementById('header-container');
+        if (container) {
+            container.innerHTML = data;
+            setupHeaderMenu(); // 🛠️ 載入完成後，啟動選單核心與自動收納功能
+        }
+    })
+    .catch(err => console.error("頁首載入失敗:", err));
+
+    // ==========================================================================
+    // 【7. Header 智慧導覽選單演算法】
+    // ==========================================================================
+    function setupHeaderMenu() {
+        const toggleButton = document.querySelector('.menu-toggle');
+        const navLinks = document.querySelector('.header-nav-links');
+
+        if (toggleButton && navLinks) {
+            toggleButton.onclick = function(e) {
+                navLinks.classList.toggle('active');
+                e.stopPropagation();
+            };
+
+            document.onclick = function(e) {
+                if (navLinks.classList.contains('active') && !navLinks.contains(e.target) && e.target !== toggleButton) {
+                    navLinks.classList.remove('active');
+                }
+            };
+        }
+
+        const mainNav = document.querySelector('.header-nav-links'); 
+        if (!mainNav) return;
+
+        let moreMenu = document.getElementById('more-menu');
+        let overflowLinks = document.getElementById('overflow-links');
+        
+        if (!moreMenu) {
+            moreMenu = document.createElement('div');
+            moreMenu.id = 'more-menu';
+            moreMenu.className = 'more-dropdown';
+            moreMenu.innerHTML = `
+                <a href="#" class="more-toggle" onclick="return false;">更多 ▾</a>
+                <div class="more-dropdown-content" id="overflow-links"></div>
+            `;
+            mainNav.appendChild(moreMenu);
+            overflowLinks = document.getElementById('overflow-links');
+        }
+
+        const allLinks = Array.from(mainNav.children).filter(el => el !== moreMenu && el.tagName === 'A');
+        const searchBtn = mainNav.querySelector('.search-icon-btn');
+
+        function adjustNavItems() {
+            if (window.innerWidth <= 768) {
+                allLinks.forEach(item => mainNav.insertBefore(item, moreMenu));
+                if (searchBtn) mainNav.appendChild(searchBtn);
+                moreMenu.style.display = 'none';
+                return;
+            }
+
+            moreMenu.style.display = 'none'; 
+            overflowLinks.innerHTML = '';    
+            allLinks.forEach(item => mainNav.insertBefore(item, moreMenu));
+            if (searchBtn) mainNav.appendChild(searchBtn);
+
+            let navContainerWidth = mainNav.offsetWidth;
+            let totalWidth = 0;
+            let isOverflow = false;
+            
+            const moreBtnWidth = 90; 
+            const searchBtnWidth = searchBtn ? (searchBtn.offsetWidth || 50) : 50;
+
+            for (let i = 0; i < allLinks.length; i++) {
+                const item = allLinks[i];
+                if (isOverflow) {
+                    overflowLinks.appendChild(item);
+                    continue;
+                }
+
+                const itemStyle = window.getComputedStyle(item);
+                const marginLeft = parseFloat(itemStyle.marginLeft) || 0;
+                const marginRight = parseFloat(itemStyle.marginRight) || 0;
+                totalWidth += item.offsetWidth + marginLeft + marginRight;
+
+                if (totalWidth + moreBtnWidth + searchBtnWidth > navContainerWidth) {
+                    isOverflow = true;
+                    moreMenu.style.display = 'inline-block';
+                    overflowLinks.appendChild(item);
+                }
+            }
+        }
+
+        adjustNavItems();
+        window.removeEventListener('resize', adjustNavItems);
+        window.addEventListener('resize', adjustNavItems);
+    }
+
+// ==========================================
+// 載入頁尾並處理年份（維持原樣）
+// ==========================================
+    fetch('footer.html')
+    .then(response => response.text())
+    .then(data => {
+        const footerContainer = document.getElementById('global-footer');
+        if (footerContainer) {
+            footerContainer.innerHTML = data;
+            
+            // 頁尾載入完成後，更新年份
+            const yearSpan = document.getElementById('current-year');
+            if (yearSpan) {
+                yearSpan.textContent = new Date().getFullYear();
+            }
+        }
+    })
+    .catch(err => console.error("頁尾載入失敗:", err));
   </script>
 </body>
 </html>
