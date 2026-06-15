@@ -16,6 +16,10 @@
         /* ==========================================================================
            【1. 全域與基礎排版樣式】
            ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
         html, body {
             margin: 0;
             padding: 0;
@@ -76,6 +80,7 @@
             width: 100%;
             box-sizing: border-box;
         }
+
 
         /* ==========================================================================
            【2. SVG 特效標題】
@@ -171,7 +176,8 @@
 
         @media (max-width: 768px) {
             .title-container { flex-wrap: wrap; gap: 20px; justify-content: center; }
-            .vector-letter svg { width: 80px; height: 80px; }
+            .vector-letter svg { width: 30px; height: 30px; }
+            .vector-letter p { font-size: 10px; margin: 20px 0 0px 8px;}   
             .event-block { flex-direction: column; align-items: center; text-align: center; }
             .event-image img { width: 100%; max-width: 350px; }
         }
