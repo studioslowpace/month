@@ -59,11 +59,11 @@
     /* 優化：直接使用重複性漸變背景製作條紋，減少 DOM 節點 */
     background: 
         repeating-linear-gradient(
-            to bottom,
+            to top,
             var(--banner-bg),
-            var(--banner-bg) 40px,
-            var(--white) 40px,
-            var(--white) 60px  /* 條紋寬度 20px (60-40) */
+            var(--banner-bg) 25px,
+            var(--white) 35px,
+            var(--white) 52px  /* 條紋寬度 20px (60-40) */
         );
 }
 
@@ -312,7 +312,17 @@ width: 100%;               /* 在手機版預設撐滿父容器 */
         }
         @media (max-width: 768px) {
             .navbar-wrapper { min-height: 180px; }
-            .hero-banner { height: 180px; }
+            .hero-banner { height: 180px; background: 
+        repeating-linear-gradient(
+            to top,
+            var(--banner-bg),
+            var(--banner-bg) 15px,
+            var(--white) 20px,
+            var(--white) 32px  /* 條紋寬度 20px (60-40) */
+        );}
+        .banner__badge-content {
+    object-position: calc(50% - 0px) calc(50% + 15px); /* 向左移動 20px，向上移動 10px */
+}
             .stripe-bg { height: 100px; border-top: 12px solid #ffffff; border-bottom: 12px solid #ffffff; }
             .badge-circle { width: 140px; height: 140px; border: 5px solid #ffffff; padding: 10px; }
             .main-container { flex-direction: column; padding: 0 25px; margin: 40px auto; display: flex !important; }
@@ -323,6 +333,7 @@ width: 100%;               /* 在手機版預設撐滿父容器 */
 /* 1. 讓最外層的 section 寬度自適應，並加上內縮，字才不會貼到螢幕邊緣 */
   .neighbour-section {
     padding: 10px 15px !important;
+    
   }
 
   /* 2. 核心修正：大盒子解除 600px 限制，改成由內容自動撐開高度 */

@@ -11,6 +11,10 @@
     /* ==========================================
        1. 全域基礎樣式與環境色設定
        ========================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
     html, body {
       vertical-align: baseline;
       border: 0;
@@ -171,6 +175,17 @@
       margin-top: 20px;
     }
 
+        /* 詳細頁獨立的置中標題樣式 */
+    .detail-centered-title {
+      font-size: 28px;
+      color: #4a3728;
+      text-align: center;
+      margin-top: 10px;
+      margin-bottom: 5px;
+      font-weight: bold;
+      width: 100%;
+    }
+
     /* 左側圖片區欄位：嚴格控制 108:135 寬高比 */
     .detail-left-col {
       flex: 0 0 380px; /* 固定左側圖片寬度 380px 不伸縮 */
@@ -189,19 +204,7 @@
       display: flex;
       flex-direction: column;
     }
-    .detail-right-col h2 {
-      font-size: 28px;
-      color: #4a3728;
-      margin-top: 0;
-      margin-bottom: 10px;
-      font-weight: bold;
-    }
-    .detail-right-col hr {
-      border: 0;
-      border-top: 1px solid #eee;
-      margin: 15px 0;
-      width: 100%;
-    }
+
     .detail-right-col .content-text {
       font-size: 16px;
       color: #444;
@@ -235,22 +238,6 @@
     }
     .nav-btn:hover { background: #33251b; }
 
-    /* ==========================================
-       5. 響應式斷點設計 (RWD 手機模式優化)
-       ========================================== */
-    @media (max-width: 768px) {
-      /* 手機板詳細頁面改為單欄上下排列 */
-      .detail-layout {
-        flex-direction: column;
-        gap: 20px;
-      }
-      .detail-left-col {
-        flex: none;
-        width: 100%; /* 圖片寬度改為滿版 */
-        max-width: 340px;
-        margin: 0 auto; /* 置中顯示 */
-      }
-    }
 
     /* ==========================================
        6. 通用彈出視窗樣式 (通知、密碼、表單)
@@ -295,6 +282,61 @@
     .btn-group { text-align: right; margin-top: 20px; }
     .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
     .btn-submit { background: #2b3929; color: white; margin-left: 10px; }
+
+           /* ─── ➕ 獨立的「新增展覽」專用按鈕樣式 ─── */
+        .club-global-add-wrap {
+            display: none; /* 🔒 預設隱藏：只有管理員登入後才會顯示 */
+            justify-content: center;
+            margin: 30px auto 10px;
+            width: 100%;
+            max-width: 1500px;
+
+        }
+        .btn-global-add {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #2b73ff;
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(43, 115, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .btn-global-add:hover {
+            background-color: #1456db;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(43, 115, 255, 0.3);
+        }
+
+    /* ==========================================
+       響應式斷點設計 (RWD 手機模式優化)
+    ========================================== */
+    @media (max-width: 600px) {
+      /* 手機板詳細頁面改為單欄上下排列 */
+      .detail-layout {
+        flex-direction: column;
+        gap: 20px;
+      }
+      .detail-left-col {
+        flex: none;
+        width: 100%; /* 圖片寬度改為滿版 */
+        max-width: 340px;
+        margin: 0 auto; /* 置中顯示 */
+      }
+
+          .logo-btn img {
+      max-width: 30px;
+    }
+
+        .detail-view-container {
+      padding: 20px;
+    }
+    }
   </style>
 </head>
 <body>
@@ -314,7 +356,7 @@
 
     <div class="club-global-add-wrap" id="clubGlobalAddBlock">
     <button class="btn-global-add" onclick="window.openCreateModal()">
-        <span>➕ 新增讀書會項目</span>
+        <span>新增讀書會項目</span>
     </button>
 </div>
 
@@ -329,6 +371,9 @@
           <button class="nav-btn" onclick="navigateClub(1)">下一篇</button>
         </div>
       </div>
+
+            <h2 class="detail-centered-title" id="detailTitleSlot"></h2>
+      <hr class="detail-centered-hr">
 
       <div class="detail-layout">
         <div class="detail-left-col" id="detailLeftImgArea"></div>
@@ -595,19 +640,21 @@
       // 處理內文字串換行
       const formattedContent = item.content ? item.content.replace(/\n/g, '<br>') : '';
       
-      // 分別渲染左側圖片與右側文字
-      const leftHtml = `<img class="detail-main-img" src="${item.image_url || ''}" alt="${item.title}" oncontextmenu="return false;" ondragstart="return false;">`;
-      const rightHtml = `
-        <h2>${item.title || '未命名'}</h2>
-        <hr>
-        <div class="content-text">${formattedContent}</div>
+      // 1. 先將標題直接塞入最上方的獨立置中元件
+      document.getElementById('detailTitleSlot').innerText = item.title || '未命名';
+
+      // 2. 左側欄：渲染 108:135 直式大圖
+      document.getElementById('detailLeftImgArea').innerHTML = `
+        <img class="detail-main-img" src="${item.image_url || ''}" alt="${item.title}" oncontextmenu="return false;" ondragstart="return false;">
       `;
 
-      document.getElementById('detailLeftImgArea').innerHTML = leftHtml;
-      document.getElementById('detailRightTextArea').innerHTML = rightHtml;
+      // 3. 右側欄：渲染純介紹內文
+      document.getElementById('detailRightTextArea').innerHTML = `
+        <div class="content-text">${formattedContent}</div>
+      `;
       
       // 隱藏機制：關閉頁首橫幅大圖、關閉卡片列表格線
-      if (document.getElementById('mainHeaderArea')) document.getElementById('mainHeaderArea').style.display = 'none';
+      document.getElementById('mainHeaderArea').style.display = 'none';
       document.getElementById('clubs-container').style.display = 'none';
       
       // 顯示機制：開啟詳細資料版面
@@ -616,6 +663,7 @@
       // 畫面自動平滑捲動至詳細資料起點
       document.getElementById('detailViewArea').scrollIntoView({ behavior: 'smooth' });
     }
+
 
     // 關閉詳細檢視，還原顯示頁首大圖與清單
     function closeDetailPageView() {
