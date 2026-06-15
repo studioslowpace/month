@@ -67,7 +67,7 @@
     .marquee-text {
       display: inline-block;
       /* 【可改動】10s 代表滾動一輪需 10 秒，數字愈小速度愈快 */
-      animation: marquee 10s linear infinite; 
+      animation: marquee 6s linear infinite; 
       font-weight: bold;
       color: #444;
       font-size: 16px;
@@ -227,10 +227,10 @@
        ========================================================================== */
     .topic-card {
       background-color: #d8ded6; /* 依據 image_636edc.png 還原的淡綠灰色背景 */
-      padding: 35px 25px;
+      padding: 15px 15px;
       width: 100%;
       max-width: 360px; /* 限制卡片最大寬度，防止手機拉得太長 */
-      min-height: 180px; /* 確保每張卡片高度基本一致 */
+      max-height: 140px; /* 確保每張卡片高度基本一致 */
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -241,7 +241,7 @@
     .topic-date {
       font-size: 15px;
       color: #444;
-      margin-bottom: 25px;
+      margin-bottom: 15px;
     }
 
     .topic-content {
